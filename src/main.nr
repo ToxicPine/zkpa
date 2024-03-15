@@ -107,14 +107,14 @@ fn gen_camera_id(
 
 fn main(
     randomNonce: u32,
+    ecdh_scalar: Field,
     cameraPubKeyY: u8,
     cameraPubKeyX: u32,
-    ecdh_scalar: Field,
+    cameraAttestationSignature: [u8; 64],
     keeperKey: pub Point,
     certAuthorityPubkeyX: pub [u8; 32],
     certAuthorityPubkeyY: pub [u8; 32],
     certAuthoritySignature: [u8; 64],
-    cameraAttestationSignature: [u8; 64],
     imageHash: pub [u8; 32],
     assertedCameraIdentifier: pub [u8; 64]
 ) {
@@ -170,7 +170,22 @@ fn main(
 
 #[test]
 fn test_main() {
-    //main(1, 2);
+    main(
+        0x14e50ec35ddee0bd40134da8023249c715231924cc3cfd3cdd950715ebb9d588,
+        0x02,
+        0xac638f14181f3ad336a2c4979eef36389c56f3101f5bea57f9f79f8ab5e2776d,
+        0x6915a13c1d33d5d315eea68a82737305fea27d6f78cf0917f3130ba8c118fa0f40eefca31cce1335802a2ed223d0d2d651f78780885fd7284612dea3d761c4df1d8b8ab9c53998a20cfa14f1fd6a4269ee194eb85ae92146b4f6434666bd7f8ab62cf7e265ba3b57f84558ba0e81913009f1008b77b7233608d1f41e49bd2084da27c9e8f8367f4e5bf9682f07a64779cb5a090dc61006f7c49247032370c52de7692aa431b4ba862d2bc29dabc8795b6957f41ff3bcf4c5b5b8e67a7dd17a79824155ffe04b61b6c5bc864bd9ebcbc3bdfaf3d369bab324fb1dccab19105eedea4953cdf41eaaf915c241b3966b9b8788cbc748006a4b321666342589c2,
+        Point::(
+            "b57636fde92e6fce78bce928c39cca0d1683806097bda75d4d595b9531f36621",
+            "9e2b9d17b39f05efb7d53ad34d91db03745253265647327df9a00896b67a0b61"
+        ),
+        0xa38c57dba62c3c6732da00fe336f4b28c0797a39b7ce737a1ae6c69060dfeee4,
+        0xa38c57dba62c3c6732da00fe336f4b28c0797a39b7ce737a1ae6c69060dfeee4,
+        "",
+        0xcd72033f5a5c7c74fcf18cb70f79ac8dc4fed30d70dd42bf279e3315afdc8b3e5609e97992f5ac646d7d37e48af5af11941115f98972571fbc536bd941e03dd1,
+        0xcd72033f5a5c7c74fcf18cb70f79ac8dc4fed30d70dd42bf279e3315afdc8b3e5609e97992f5ac646d7d37e48af5af11941115f98972571fbc536bd941e03dd1,
+        ""
+    );
     // Uncomment to make test fail
     // main(1, 1);
 }
