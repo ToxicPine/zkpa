@@ -1,0 +1,8 @@
+[package]
+name = "zkpa"
+type = "bin"
+authors = [""]
+compiler_version = ">=0.25.0"
+
+[dependencies]
+aes = { tag = "v0.4.0", git = "https://github.com/TaceoLabs/noir-aes" }
