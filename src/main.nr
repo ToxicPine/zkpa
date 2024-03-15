@@ -80,7 +80,7 @@ fn gen_camera_id(
     }
 
     // Calculate ECDH Shared Key.
-    let ecdh_key = babyjub_scalarmul(ecdh_scalar, keeperKey).x as u64;
+    let ecdh_key = babyjub_scalarmul(ecdh_scalar, keeperKey).x as u32;
     let mut ecdh_key_bytes: [u8; 16] = [0; 16];
     for i in 0..15 {
         // Make ecdh_key Into a 16 Byte Key.
