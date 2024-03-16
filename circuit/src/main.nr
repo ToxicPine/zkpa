@@ -3,6 +3,7 @@ use dep::aes::aes_128_enc as aes_128_enc;
 use dep::std::ec::tecurve::affine::{Curve, Point};
 use dep::std::ec::tecurve::affine::Point as G;
 
+// Generates a Public Key from a Private Key via Scalar Multiplication of the Base Point.
 fn bjj_pub_key(priv_key: Field) -> Point {
     let bjj = Curve::new(
         168700,
@@ -21,6 +22,7 @@ fn bjj_pub_key(priv_key: Field) -> Point {
     bjj.mul(priv_key, base_pt)
 }
 
+// Scalar Multiplication.
 fn bjj_scalar_mul(scalar: Field, base_pt: Point) -> Point {
     let bjj = Curve::new(
         168700,
@@ -34,6 +36,7 @@ fn bjj_scalar_mul(scalar: Field, base_pt: Point) -> Point {
     bjj.mul(scalar, base_pt)
 }
 
+// Derive a 16-byte Key using ECDH from x-coord of Point (a * b * G).
 fn bjj_ecdh(scalar: Field, base_pt: Point) -> [u8; 16] {
     let point: Point = bjj_scalar_mul(scalar, base_pt);
     let x_array = point.x.to_be_bytes(32);
@@ -45,10 +48,12 @@ fn bjj_ecdh(scalar: Field, base_pt: Point) -> [u8; 16] {
     x_16
 }
 
+// Construct a Point from Fields.
 fn construct_point(x: Field, y: Field) -> Point {
     Point::new(x, y)
 }
 
+// Generate An Unencrypted Camera Identifier.
 fn gen_unencrypted_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
     cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
@@ -56,15 +61,15 @@ fn gen_unencrypted_camera_id(
 ) -> [u8; 64] {
     let mut cameraId: [u8; 64] = [0; 64];
 
-    // Append The Nonce To cameraId
+    // Append the Random Nonce to the Camera ID.
     for i in 0..31 {
         cameraId[i] = randomNonce[i];
     }
 
-    // Append The Camera Pubkey Y To cameraId.
+    // Append the Camera Pubkey Y to the Camera ID.
     cameraId[31] = cameraPubKeyY;
 
-    // Append The Camera Pubkey X to cameraID.
+    // Append the Camera Pubkey X to the Camera ID.
     for i in 0..32 {
         cameraId[i+32] = cameraPubKeyX[i];
     }
@@ -72,7 +77,7 @@ fn gen_unencrypted_camera_id(
     cameraId
 }
 
-// Provides the Camera ID in the 64 byte encrypted form, using ECDH and AES-128.
+// Provides the Camera ID in the 64-byte encrypted form, using ECDH and AES-128.
 fn gen_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
     cameraPubKeySignY: u8, // Sign of Y-Coord of Public Key Of Camera Signer, Positive or Negative
@@ -95,11 +100,11 @@ fn gen_camera_id(
     // Encrypt Camera ID to Keeper.
     let mut encryptedCameraId_bytes: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..encryptedCameraId_bytes.len() {
-        // Encrypt Using The Key.
+        // Encrypt Using AES-128 ECB with the 16-byte Key From ECDH.
         encryptedCameraId_bytes[i] = aes_128_enc(cameraId_chunk[i], ecdh_key);
     }
 
-    // Convert Formats.
+    // Unchunk.
     let mut encryptedCameraId: [u8; 64] = [0; 64];
     for i in 0..encryptedCameraId_bytes.len() {
         for n in 0..16 {
