@@ -4,46 +4,56 @@ from PIL import Image
 from ecdsa import ellipticcurve
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+import tinyec.ec as ec
 import os
 import io
 
+EC_CURVE_REGISTRY = {
+    "babyJubJub": {
+        "p": 21888242871839275222246405745257275088548364400416034343698204186575808495617,
+        "a": 168698,
+        "b": 1,
+        "g": (
+            7,
+            4258727773875940690362607550498304598101071202821725296872974770776423442226
+        ),
+        "n": 21888242871839275222246405745257275088614511777268538073601725287587578984328,
+        "h": 8
+    }
+}
+
+def get_curve(name):
+    curve_params = {}
+    for k, v in EC_CURVE_REGISTRY.items():
+        if name.lower() == k.lower():
+            curve_params = v
+    if curve_params == {}:
+        raise ValueError("Unknown elliptic curve name")
+    try:
+        sub_group = ec.SubGroup(curve_params["p"], curve_params["g"], curve_params["n"], curve_params["h"])
+        curve = ec.Curve(curve_params["a"], curve_params["b"], sub_group, name)
+    except KeyError:
+        raise RuntimeError("Missing parameters for curve %s" % name)
+    return curve
+
+babyJubJub = get_curve("babyJubJub")
+
 def BabyJubJub_ECDH(scalar, keeper_pk_x, keeper_pk_y):
-    p =  21888242871839275222246405745257275088548364400416034343698204186575808495617  # Prime for the finite field
-    a =  168700                                                                         # The 'a' coefficient in the curve equation
-    b =  168696                                                                         # The 'b' coefficient in the curve equation
-    Gx = 995203441582195749578291179787384436505546430278305826713579947235728471134    # The x-coordinate of the base point G
-    Gy = 5472060717959818805561601436314318772137091100104008585924551046643952123905   # The y-coordinate of the base point G
-    r =  21888242871839275222246405745257275088614511777268538073601725287587578984328  # The order of the base point G
+    scalar = int.from_bytes(bytes.fromhex(scalar))
 
-    # Define the finite field and the curve
-    curve = ellipticcurve.CurveFp(p, a, b)
+    keeper_point = ec.Point(babyJubJub, keeper_pk_x, keeper_pk_y)
+    ecdh_point = scalar * keeper_point
+    ecdh_key = ecdh_point.x
 
-    # Get Points
-    G = ellipticcurve.Point(curve, Gx, Gy, r)
-    keeper_pk = ellipticcurve.Point(curve, keeper_pk_x, keeper_pk_y, r)
-
-    ecdh_point = scalar * keeper_pk
-    ecdh_key = ecdh_point.x()
-    pk = scalar * G
-
-    return ecdh_key, pk
+    return ecdh_key
 
 def getJubJubPubkey(scalar):
-    p =  21888242871839275222246405745257275088548364400416034343698204186575808495617  # Prime for the finite field
-    a =  168700                                                                         # The 'a' coefficient in the curve equation
-    b =  168696                                                                         # The 'b' coefficient in the curve equation
-    Gx = 995203441582195749578291179787384436505546430278305826713579947235728471134    # The x-coordinate of the base point G
-    Gy = 5472060717959818805561601436314318772137091100104008585924551046643952123905   # The y-coordinate of the base point G
-    r =  21888242871839275222246405745257275088614511777268538073601725287587578984328  # The order of the base point G
+    G = babyJubJub.g
 
-    # Define the finite field and the curve
-    curve = ellipticcurve.CurveFp(p, a, b)
-
-    # Get Points
-    G = ellipticcurve.Point(curve, Gx, Gy, r)
+    scalar = int.from_bytes(bytes.fromhex(scalar))
     pk = scalar * G
 
-    return pk
+    return pk.x, pk.y
 
 ecdh_scalar = "6915a13c1d33d5d315eea68a82737305fea27d6f78cf0917f3130ba8c118fa0f40eefca31cce1335802a2ed223d0d2d651f78780885fd7284612dea3d761c4df1d8b8ab9c53998a20cfa14f1fd6a4269ee194eb85ae92146b4f6434666bd7f8ab62cf7e265ba3b57f84558ba0e81913009f1008b77b7233608d1f41e49bd2084da27c9e8f8367f4e5bf9682f07a64779cb5a090dc61006f7c49247032370c52de7692aa431b4ba862d2bc29dabc8795b6957f41ff3bcf4c5b5b8e67a7dd17a79824155ffe04b61b6c5bc864bd9ebcbc3bdfaf3d369bab324fb1dccab19105eedea4953cdf41eaaf915c241b3966b9b8788cbc748006a4b321666342589c2"
 random_nonce = "14e50ec35ddee0bd40134da8023249c715231924cc3cfd3cdd950715ebb9d588"
@@ -67,7 +77,7 @@ def gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x):
 def gen_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x, ecdh_scalar, keeper_pk_x, keeper_pk_y):
     camera_id = gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x)
     
-    ecdh_key, prover_pk = BabyJubJub_ECDH(random_nonce, keeper_pk_x, keeper_pk_y)
+    ecdh_key = BabyJubJub_ECDH(random_nonce, keeper_pk_x, keeper_pk_y)
     ecdh_key_bytes = ecdh_key.to_bytes(32, 'little')
     ecdh_key_16 = ecdh_key_bytes[16:32]
     
@@ -136,15 +146,15 @@ def main():
     print("Camera Public Key, Y:", f"0x{compressed_pub_key.hex()[:2]}")
     print("Camera Public Key, X:", return_byte_array_str(compressed_pub_key.hex()[2:66]))
     print("Camera Signature:", return_byte_array_str(serialized_sig[0].hex()))
-    print("Keeper Public Key, X:", return_byte_array_str(keeperX))
-    print("Keeper Public Key, Y:", return_byte_array_str(keeperY))
+    print("Keeper Public Key, X:", keeperX)
+    print("Keeper Public Key, Y:", keeperY)
     print("Trusted Authority Public Key, X:", return_byte_array_str(trustedX))
     print("Trusted Authority Public Key, Y:", return_byte_array_str(trustedY))
     print("Trusted Authority Camera Signature:", return_byte_array_str(authority_camera_certificate))
     print("Image Hash:", return_byte_array_str(hash_data(image_data).hex()))
 
     print(gen_unencrypted_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66]).hex())
-    #print(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, keeperX, keeperY).hex())
+    print(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, keeperX, keeperY).hex())
 
 if __name__ == '__main__':
     main()
