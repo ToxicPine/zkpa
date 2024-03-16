@@ -1,23 +1,52 @@
 use dep::std::ecdsa_secp256k1::verify_signature as ecdsa_verify;
 use dep::aes::aes_128_enc as aes_128_enc;
-use dep::curves::ed25519::{ed25519, Ed25519};
-use dep::curves::ed25519::fp::PrimeField as Fp;
-use dep::curves::ed25519::tecurve::{Point, Curve};
-use dep::bigint::BigUint56;
-use dep::field::PrimeField as PrimeField;
+use dep::std::ec::tecurve::affine::{Curve, Point};
+use dep::std::ec::tecurve::affine::Point as G;
 
-fn curve25519_get_pubkey(priv_key: Field) -> Point {
-    let Ed25519 { curve, cofactor: _cof } = ed25519();
+fn bjj_pub_key(priv_key: Field) -> Point {
+    let bjj = Curve::new(
+        168700,
+        168696,
+        G::new(
+            995203441582195749578291179787384436505546430278305826713579947235728471134,
+            5472060717959818805561601436314318772137091100104008585924551046643952123905
+        )
+    );
 
-    curve.mul(priv_key, curve.gen)
+    let base_pt = Point::new(
+        5299619240641551281634865583518297030282874472190772894086521144482721001553,
+        16950150798460657717958625567821834550301663161624707787222815936182638968203
+    );
+
+    bjj.mul(priv_key, base_pt)
 }
 
-fn curve25519_ecdh(priv_key: [u8; 32], base_pt: Point) -> [u8; 32] {
-    let Ed25519 { curve, cofactor: _cof } = ed25519();
-    let priv_key_u8: [u8] = [i in priv_key];
+fn bjj_scalar_mul(scalar: Field, base_pt: Point) -> Point {
+    let bjj = Curve::new(
+        168700,
+        168696,
+        G::new(
+            995203441582195749578291179787384436505546430278305826713579947235728471134,
+            5472060717959818805561601436314318772137091100104008585924551046643952123905
+        )
+    );
 
-    priv_key_fp = Fp::from_bytes(priv_key_u8);
-    curve.mul(priv_key, base_pt).x.to_be_bytes(32);
+    bjj.mul(scalar, base_pt)
+}
+
+fn bjj_ecdh(scalar: Field, base_pt: Point) -> [u8; 16] {
+    let point: Point = bjj_scalar_mul(scalar, base_pt);
+    let x_array = point.x.to_be_bytes(32);
+    let mut x_16: [u8; 16] = [0; 16];
+    for i in 0..16 {
+        x_16[i] = x_array[i];
+    }
+
+    x_16
+}
+
+fn construct_point(x: Field, y: Field) -> Point {
+    Point::new(x, y)
 }
 
 // The Camera ID (64 bytes), which will be encrypted, consists of:
@@ -53,7 +82,7 @@ fn gen_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
     cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
     cameraPubKeyX: [u8; 32], // X-Coord of Public Key of Camera Signer
-    ecdhScalar: [u8; 32], // ECDH Scalar for Symmetric Key Encryption
+    ecdhScalar: Field, // ECDH Scalar for Symmetric Key Encryption
     keeperKey: Point // Key of the Blacklist Keeper
 ) -> [u8; 64] {
     // Get Encrypted Camera ID 
@@ -66,7 +95,7 @@ fn gen_camera_id(
     }
 
     // Calculate ECDH Shared Key, Use First 16 Bytes Of X-Coord As Key.
-    let ecdh_key = curve25519_ecdh(ecdhScalar, keeperKey);
+    let ecdh_key = bjj_ecdh(ecdhScalar, keeperKey);
     let mut ecdh_key_16: [u8; 16] = [0; 16];
     for i in 0..16 {
         ecdh_key_16[i] = ecdh_key[i];
@@ -98,11 +127,11 @@ fn is_y_negative(bytes: [u8; 32]) -> bool {
 
 fn main(
     randomNonce: [u8; 31],
-    ecdhScalar: [u8; 32],
+    ecdhScalar: Field,
     cameraPubKeyX: [u8; 32],
     cameraPubKeyFullY: [u8; 32],
     cameraAttestationSignature: [u8; 64],
-    keeperKey: pub [[u8; 32]; 2],
+    keeperKey: pub [Field; 2],
     certAuthorityPubkeyX: pub [u8; 32],
     certAuthorityPubkeyY: pub [u8; 32],
     certAuthoritySignature: [u8; 64],
@@ -118,7 +147,7 @@ fn main(
     }
 
     // Represent Keeper Key as Point.
-    let keeperKey_Point = Point::new(keeperKey[0], keeperKey[1]);
+    let keeperKey_Point = construct_point(keeperKey[0], keeperKey[1]);
 
     // Get Camera Identifier.
     let cameraIdentifier = gen_camera_id(
@@ -185,9 +214,9 @@ fn test_camera_id_generation() {
 
 #[test]
 fn test_keyagreement() {
-    let ecdhScalar: [u8; 32] = [0x02; 32];
+    let ecdhScalar: Field = 0x0000;
     let keeperKey = Point::new(0x11, 0x11);
-    let ecdh_key = curve25519_ecdh(ecdhScalar, keeperKey);
+    let ecdh_key = bjj_ecdh(ecdhScalar, keeperKey);
     println("Agreed Key:");
     println(ecdh_key);
 }
