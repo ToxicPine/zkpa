@@ -49,11 +49,6 @@ fn construct_point(x: Field, y: Field) -> Point {
     Point::new(x, y)
 }
 
-// The Camera ID (64 bytes), which will be encrypted, consists of:
-// - A Random Nonce (31 bytes)
-// - The Unique Compressed Pubkey Of The Camera Signer (33 bytes)
-//   - The Y-coord is compressed, we delcare whether it is positive (1 byte)
-//   - The X-coord is given (32 bytes)
 fn gen_unencrypted_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
     cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
@@ -80,13 +75,13 @@ fn gen_unencrypted_camera_id(
 // Provides the Camera ID in the 64 byte encrypted form, using ECDH and AES-128.
 fn gen_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
-    cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
+    cameraPubKeySignY: u8, // Sign of Y-Coord of Public Key Of Camera Signer, Positive or Negative
     cameraPubKeyX: [u8; 32], // X-Coord of Public Key of Camera Signer
     ecdhScalar: Field, // ECDH Scalar for Symmetric Key Encryption
-    keeperKey: Point // Key of the Blacklist Keeper
+    consortiumPubKey: Point // Key of the Blacklist Keeper
 ) -> [u8; 64] {
-    // Get Encrypted Camera ID 
-    let cameraId: [u8; 64] = gen_unencrypted_camera_id(randomNonce, cameraPubKeyY, cameraPubKeyX);
+    // Get Camera ID as Chunks.
+    let cameraId: [u8; 64] = gen_unencrypted_camera_id(randomNonce, cameraPubKeySignY, cameraPubKeyX);
     let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..cameraId_chunk.len() {
         for n in 0..16 {
@@ -95,17 +90,13 @@ fn gen_camera_id(
     }
 
     // Calculate ECDH Shared Key, Use First 16 Bytes Of X-Coord As Key.
-    let ecdh_key = bjj_ecdh(ecdhScalar, keeperKey);
-    let mut ecdh_key_16: [u8; 16] = [0; 16];
-    for i in 0..16 {
-        ecdh_key_16[i] = ecdh_key[i];
-    }
+    let ecdh_key = bjj_ecdh(ecdhScalar, consortiumPubKey);
 
     // Encrypt Camera ID to Keeper.
     let mut encryptedCameraId_bytes: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..encryptedCameraId_bytes.len() {
         // Encrypt Using The Key.
-        encryptedCameraId_bytes[i] = aes_128_enc(cameraId_chunk[i], ecdh_key_16);
+        encryptedCameraId_bytes[i] = aes_128_enc(cameraId_chunk[i], ecdh_key);
     }
 
     // Convert Formats.
@@ -119,10 +110,16 @@ fn gen_camera_id(
     encryptedCameraId
 }
 
-fn is_y_negative(bytes: [u8; 32]) -> bool {
+fn get_compressed_y(bytes: [u8; 32]) -> u8 {
+    // Get Least Significant Bit To Determine Oddness.
     let is_neg = bytes[0] & 1;
 
-    is_neg as bool
+    // Set 0x02 if Even, 0x03 if Odd.
+    if (is_neg as bool) == false {
+        0x02
+    } else {
+        0x03
+    }
 }
 
 fn main(
@@ -131,7 +128,8 @@ fn main(
     cameraPubKeyX: [u8; 32],
     cameraPubKeyFullY: [u8; 32],
     cameraAttestationSignature: [u8; 64],
-    keeperKey: pub [Field; 2],
+    consortiumPubKey: pub [Field; 2],
+    assertedDecryptPk: pub [Field; 2],
     certAuthorityPubkeyX: pub [u8; 32],
     certAuthorityPubkeyY: pub [u8; 32],
     certAuthoritySignature: [u8; 64],
@@ -139,28 +137,27 @@ fn main(
     assertedCameraIdentifier: pub [u8; 64]
 ) {
     // Check Whether The Pubkey Is Positive or Negative.
-    let mut cameraPubKeyY: u8 = 0x02;
-    let mut ySign: bool = false;
-    ySign = is_y_negative(cameraPubKeyFullY);
-    if ySign == true {
-        cameraPubKeyY = 0x03;
-    }
+    let mut cameraPubKeySignY: u8 = get_compressed_y(cameraPubKeyFullY);
 
     // Represent Keeper Key as Point.
-    let keeperKey_Point = construct_point(keeperKey[0], keeperKey[1]);
+    let consortiumPubKey_Point = construct_point(consortiumPubKey[0], consortiumPubKey[1]);
+
+    // Calculate ECDH Counterpart So Consortium Can Decrypt The CameraID.
+    let decryptPk_Point = bjj_pub_key(ecdhScalar);
+    let decryptPk: [Field; 2] = [decryptPk_Point.x, decryptPk_Point.y];
 
     // Get Camera Identifier.
     let cameraIdentifier = gen_camera_id(
         randomNonce,
-        cameraPubKeyY,
+        cameraPubKeySignY,
         cameraPubKeyX,
         ecdhScalar,
-        keeperKey_Point
+        consortiumPubKey_Point
     );
 
     // Get the Camera Pubkey in its Compressed Form.
     let mut cameraPubKey_compressed: [u8; 33] = [0; 33];
-    cameraPubKey_compressed[0] = cameraPubKeyY;
+    cameraPubKey_compressed[0] = cameraPubKeySignY;
     for i in 0..32 {
         cameraPubKey_compressed[i+1] = cameraPubKeyX[i];
     }
@@ -188,6 +185,7 @@ fn main(
     assert(image_is_attested);
     assert(camera_is_certified);
     assert(cameraIdentifier == assertedCameraIdentifier);
+    assert(decryptPk == assertedDecryptPk);
 }
 
 #[test]
@@ -213,17 +211,42 @@ fn test_camera_id_generation() {
 }
 
 #[test]
-fn test_keyagreement() {
-    let ecdhScalar: Field = 0x0000;
-    let keeperKey = Point::new(0x11, 0x11);
-    let ecdh_key = bjj_ecdh(ecdhScalar, keeperKey);
-    println("Agreed Key:");
+fn test_key_agreement() {
+    let ecdhScalar: Field = 0x12341234;
+    let consortiumPubKey = bjj_pub_key(0x10203040506);
+    let mut ecdh_key = bjj_ecdh(ecdhScalar, consortiumPubKey);
+    println("Agreed Key On Prover Side:");
+    println(ecdh_key);
+
+    let decryptPk = bjj_pub_key(ecdhScalar);
+    ecdh_key = bjj_ecdh(0x10203040506, decryptPk);
+    println("Agreed Key On Verifier Side:");
     println(ecdh_key);
 }
 
 #[test]
-fn text_camera_id_encryption() {
-    // TODO
+fn test_camera_id_encryption() {
+    let randomNonce: [u8; 31] = [0xaa; 31];
+    let ecdhScalar: Field = 0x12341234;
+    let cameraPubKeySignY: u8 = 0x02;
+    let cameraPubKeyX: [u8; 32] = [0xFF; 32];
+    let consortiumPubKey = bjj_pub_key(0x10203040506);
+
+    let encryptedCameraId = gen_camera_id(
+        randomNonce,
+        cameraPubKeySignY,
+        cameraPubKeyX,
+        ecdhScalar,
+        consortiumPubKey
+    );
+
+    // Calculate The Decryption Key.
+    let mut encryptionKey = bjj_ecdh(ecdhScalar, consortiumPubKey);
+
+    println("Check if you can decrypt the following with AES-128 ECB,");
+    println(encryptedCameraId);
+    println("Here's your decryption key:");
+    println(encryptionKey);
 }
 
 #[test]
