@@ -1,6 +1,7 @@
 import './App.css';
 import FileUploader from './components/FileUploader';
 import Header from './components/Header';
+import Share from './components/Share';
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <main className="flex-1">
           <FileUploader />
         </main>
+        <Share />
       </div>
     </div>
   );
