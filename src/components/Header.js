@@ -2,7 +2,7 @@ import React from 'react';
 
 const Header = () => {
   return (
-    <header className="bg-gray-800 py-4 mb-20">
+    <header className="bg-gray-800 py-4 mb-5">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-white">ZKPA</h1>

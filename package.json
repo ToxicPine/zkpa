@@ -4,6 +4,9 @@
   "private": true,
   "proxy": "https://image-hash-browser.vercel.app",
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.13",
     "@noir-lang/backend_barretenberg": "^0.25.0",
     "@noir-lang/noir_js": "^0.25.0",
     "@testing-library/jest-dom": "^5.17.0",
