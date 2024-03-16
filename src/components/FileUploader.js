@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import JSConfetti from 'js-confetti'
 import { useDropzone } from 'react-dropzone';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloseIcon from '@mui/icons-material/Close';
@@ -6,6 +7,8 @@ import FileCopyIcon from '@mui/icons-material/FileCopy';
 import uploadAnimation from '../assets/upload-animation.gif';
 
 const FileUploader = () => {
+  const jsConfetti = new JSConfetti()
+
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [importUrl, setImportUrl] = useState('');
@@ -37,6 +40,10 @@ const FileUploader = () => {
     }
     return () => clearTimeout(timeoutId);
   }, [showAnimatedPreview]);
+
+  const successAction = () => {
+    jsConfetti.addConfetti()
+  }
 
   const handleFileChange = (e) => {
     const newFile = e.target.files[0];
