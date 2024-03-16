@@ -55,53 +55,53 @@ fn construct_point(x: Field, y: Field) -> Point {
 
 // Generate An Unencrypted Camera Identifier.
 fn gen_unencrypted_camera_id(
-    randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
-    cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
-    cameraPubKeyX: [u8; 32] // X-Coord of Public Key of Camera Signer
+    random_nonce: [u8; 31], // This Is Used To Randomise The Cypertext
+    camera_pubkey_y_sign: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
+    camera_pubkey_x: [u8; 32] // X-Coord of Public Key of Camera Signer
 ) -> [u8; 64] {
-    let mut cameraId: [u8; 64] = [0; 64];
+    let mut generated_camera_id: [u8; 64] = [0; 64];
 
     // Append the Random Nonce to the Camera ID.
     for i in 0..31 {
-        cameraId[i] = randomNonce[i];
+        generated_camera_id[i] = random_nonce[i];
     }
 
     // Append the Camera Pubkey Y to the Camera ID.
-    cameraId[31] = cameraPubKeyY;
+    generated_camera_id[31] = camera_pubkey_y_sign;
 
     // Append the Camera Pubkey X to the Camera ID.
     for i in 0..32 {
-        cameraId[i+32] = cameraPubKeyX[i];
+        generated_camera_id[i+32] = camera_pubkey_x[i];
     }
 
-    cameraId
+    generated_camera_id
 }
 
 // Provides the Camera ID in the 64-byte encrypted form, using ECDH and AES-128.
 fn gen_camera_id(
-    randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
-    cameraPubKeySignY: u8, // Sign of Y-Coord of Public Key Of Camera Signer, Positive or Negative
-    cameraPubKeyX: [u8; 32], // X-Coord of Public Key of Camera Signer
-    ecdhScalar: Field, // ECDH Scalar for Symmetric Key Encryption
-    consortiumPubKey: Point // Key of the Blacklist Keeper
+    random_nonce: [u8; 31], // This Is Used To Randomise The Cypertext
+    camera_pubkey_y_sign: u8, // Sign of Y-Coord of Public Key Of Camera Signer, Positive or Negative
+    camera_pubkey_x: [u8; 32], // X-Coord of Public Key of Camera Signer
+    ecdh_scalar: Field, // ECDH Scalar for Symmetric Key Encryption
+    consortium_pubkey: Point // Key of the Blacklist Keeper
 ) -> [u8; 64] {
     // Get Camera ID as Chunks.
-    let cameraId: [u8; 64] = gen_unencrypted_camera_id(randomNonce, cameraPubKeySignY, cameraPubKeyX);
-    let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
-    for i in 0..cameraId_chunk.len() {
+    let generated_camera_id: [u8; 64] = gen_unencrypted_camera_id(random_nonce, camera_pubkey_y_sign, camera_pubkey_x);
+    let mut generated_camera_id_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
+    for i in 0..generated_camera_id_chunk.len() {
         for n in 0..16 {
-            cameraId_chunk[i][n] = cameraId[((i * 16) + n)];
+            generated_camera_id_chunk[i][n] = generated_camera_id[((i * 16) + n)];
         }
     }
 
     // Calculate ECDH Shared Key, Use First 16 Bytes Of X-Coord As Key.
-    let ecdh_key = bjj_ecdh(ecdhScalar, consortiumPubKey);
+    let ecdh_key = bjj_ecdh(ecdh_scalar, consortium_pubkey);
 
     // Encrypt Camera ID to Keeper.
     let mut encryptedCameraId_bytes: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..encryptedCameraId_bytes.len() {
         // Encrypt Using AES-128 ECB with the 16-byte Key From ECDH.
-        encryptedCameraId_bytes[i] = aes_128_enc(cameraId_chunk[i], ecdh_key);
+        encryptedCameraId_bytes[i] = aes_128_enc(generated_camera_id_chunk[i], ecdh_key);
     }
 
     // Unchunk.
@@ -128,69 +128,69 @@ fn get_compressed_y(bytes: [u8; 32]) -> u8 {
 }
 
 fn main(
-    randomNonce: [u8; 31],
-    ecdhScalar: Field,
-    cameraPubKeyX: [u8; 32],
-    cameraPubKeyFullY: [u8; 32],
-    cameraAttestationSignature: [u8; 64],
-    consortiumPubKey: pub [Field; 2],
-    assertedDecryptPk: pub [Field; 2],
-    certAuthorityPubkeyX: pub [u8; 32],
-    certAuthorityPubkeyY: pub [u8; 32],
-    certAuthoritySignature: [u8; 64],
-    imageHash: pub [u8; 32],
-    assertedCameraIdentifier: pub [u8; 64]
+    random_nonce: [u8; 31],
+    ecdh_scalar: Field,
+    camera_pubkey_x: [u8; 32],
+    camera_pubkey_y: [u8; 32],
+    camera_attestation: [u8; 64],
+    consortium_pubkey: pub [Field; 2],
+    identifier_deckey: pub [Field; 2],
+    authority_pubkey_x: pub [u8; 32],
+    authority_pubkey_y: pub [u8; 32],
+    authority_attestation: [u8; 64],
+    image_hash: pub [u8; 32],
+    camera_identifier: pub [u8; 64]
 ) {
     // Check Whether The Pubkey Is Positive or Negative.
-    let mut cameraPubKeySignY: u8 = get_compressed_y(cameraPubKeyFullY);
+    let mut camera_pubkey_y_sign: u8 = get_compressed_y(camera_pubkey_y);
 
     // Represent Keeper Key as Point.
-    let consortiumPubKey_Point = construct_point(consortiumPubKey[0], consortiumPubKey[1]);
+    let consortium_pubkey_point = construct_point(consortium_pubkey[0], consortium_pubkey[1]);
 
     // Calculate ECDH Counterpart So Consortium Can Decrypt The CameraID.
-    let decryptPk_Point = bjj_pub_key(ecdhScalar);
-    let decryptPk: [Field; 2] = [decryptPk_Point.x, decryptPk_Point.y];
+    let generated_identifier_deckey_point = bjj_pub_key(ecdh_scalar);
+    let generated_identifier_deckey: [Field; 2] = [generated_identifier_deckey_point.x, generated_identifier_deckey_point.y];
 
     // Get Camera Identifier.
-    let cameraIdentifier = gen_camera_id(
-        randomNonce,
-        cameraPubKeySignY,
-        cameraPubKeyX,
-        ecdhScalar,
-        consortiumPubKey_Point
+    let generated_camera_identifier = gen_camera_id(
+        random_nonce,
+        camera_pubkey_y_sign,
+        camera_pubkey_x,
+        ecdh_scalar,
+        consortium_pubkey_point
     );
 
     // Get the Camera Pubkey in its Compressed Form.
-    let mut cameraPubKey_compressed: [u8; 33] = [0; 33];
-    cameraPubKey_compressed[0] = cameraPubKeySignY;
+    let mut camera_pubkey_compressed: [u8; 33] = [0; 33];
+    camera_pubkey_compressed[0] = camera_pubkey_y_sign;
     for i in 0..32 {
-        cameraPubKey_compressed[i+1] = cameraPubKeyX[i];
+        camera_pubkey_compressed[i+1] = camera_pubkey_x[i];
     }
 
     // Get the Hash of the Camera Pubkey.
-    let camPubKeyHash = dep::std::hash::blake3(cameraPubKey_compressed);
+    let camera_pubkey_hash = dep::std::hash::blake3(camera_pubkey_compressed);
 
     // Check Camera Attestation.
     let camera_is_certified: bool = ecdsa_verify(
-        certAuthorityPubkeyX,
-        certAuthorityPubkeyY,
-        certAuthoritySignature,
-        camPubKeyHash
+        authority_pubkey_x,
+        authority_pubkey_y,
+        authority_attestation,
+        camera_pubkey_hash
     );
 
     // Check Image Attestation.
     let image_is_attested: bool = ecdsa_verify(
-        cameraPubKeyX,
-        cameraPubKeyFullY,
-        cameraAttestationSignature,
-        imageHash
+        camera_pubkey_x,
+        camera_pubkey_y,
+        camera_attestation,
+        image_hash
     );
 
     // Check that the image is attested by the camera, that the camera which is doing the attestation is certified, and that the correct identifier has been passed.
     assert(image_is_attested);
     assert(camera_is_certified);
-    assert(cameraIdentifier == assertedCameraIdentifier);
-    assert(decryptPk == assertedDecryptPk);
+    assert(generated_camera_identifier == camera_identifier);
+    assert(generated_identifier_deckey == identifier_deckey);
 }
 
 #[test]
@@ -206,51 +206,51 @@ fn test_camera_id_generation() {
     );
     println(camera_id);
 
-    let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
+    let mut generated_camera_id_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..4 {
         for n in 0..16 {
-            cameraId_chunk[i][n] = camera_id[((i * 16) + n)];
+            generated_camera_id_chunk[i][n] = camera_id[((i * 16) + n)];
         }
     }
-    println(cameraId_chunk)
+    println(generated_camera_id_chunk)
 }
 
 #[test]
 fn test_key_agreement() {
-    let ecdhScalar: Field = 0x3f9e36da67670ab97e60c2d6138e7049b79e64ef;
-    let consortiumPubKey = bjj_pub_key(0x10203040506);
+    let ecdh_scalar: Field = 0x3f9e36da67670ab97e60c2d6138e7049b79e64ef;
+    let consortium_pubkey = bjj_pub_key(0x10203040506);
     // Consortium X: 0x022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132
     // Consortium Y: 0x076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11
-    let mut ecdh_key = bjj_ecdh(ecdhScalar, consortiumPubKey);
+    let mut ecdh_key = bjj_ecdh(ecdh_scalar, consortium_pubkey);
     println("Agreed Key On Prover Side:");
     println(ecdh_key);
 
-    let decryptPk = bjj_pub_key(ecdhScalar);
-    println(decryptPk.x);
-    println(decryptPk.y);
-    ecdh_key = bjj_ecdh(0x10203040506, decryptPk);
+    let generated_identifier_deckey = bjj_pub_key(ecdh_scalar);
+    println(generated_identifier_deckey.x);
+    println(generated_identifier_deckey.y);
+    ecdh_key = bjj_ecdh(0x10203040506, generated_identifier_deckey);
     println("Agreed Key On Verifier Side:");
     println(ecdh_key);
 }
 
 #[test]
 fn test_camera_id_encryption() {
-    let randomNonce: [u8; 31] = [0xaa; 31];
-    let ecdhScalar: Field = 0x12341234;
-    let cameraPubKeySignY: u8 = 0x02;
-    let cameraPubKeyX: [u8; 32] = [0xFF; 32];
-    let consortiumPubKey = bjj_pub_key(0x10203040506);
+    let random_nonce: [u8; 31] = [0xaa; 31];
+    let ecdh_scalar: Field = 0x12341234;
+    let camera_pubkey_y_sign: u8 = 0x02;
+    let camera_pubkey_x: [u8; 32] = [0xFF; 32];
+    let consortium_pubkey = bjj_pub_key(0x10203040506);
 
     let encryptedCameraId = gen_camera_id(
-        randomNonce,
-        cameraPubKeySignY,
-        cameraPubKeyX,
-        ecdhScalar,
-        consortiumPubKey
+        random_nonce,
+        camera_pubkey_y_sign,
+        camera_pubkey_x,
+        ecdh_scalar,
+        consortium_pubkey
     );
 
     // Calculate The Decryption Key.
-    let mut encryptionKey = bjj_ecdh(ecdhScalar, consortiumPubKey);
+    let mut encryptionKey = bjj_ecdh(ecdh_scalar, consortium_pubkey);
 
     println("Check if you can decrypt the following with AES-128 ECB,");
     println(encryptedCameraId);
@@ -260,41 +260,41 @@ fn test_camera_id_encryption() {
 
 #[test]
 fn test_ec_verification() {
-    let certAuthorityPubkeyX = [
+    let authority_pubkey_x = [
         0xA3, 0x8C, 0x57, 0xDB, 0xA6, 0x2C, 0x3C, 0x67, 0x32, 0xDA, 0x00, 0xFE, 0x33, 0x6F, 0x4B, 0x28, 0xC0, 0x79, 0x7A, 0x39, 0xB7, 0xCE, 0x73, 0x7A, 0x1A, 0xE6, 0xC6, 0x90, 0x60, 0xDF, 0xEE, 0xE4
     ];
-    let certAuthorityPubkeyY = [
+    let authority_pubkey_y = [
         0x76, 0xB0, 0x00, 0xC3, 0x35, 0xC1, 0x65, 0x35, 0xB1, 0x6D, 0xAE, 0x53, 0xF9, 0x91, 0xB7, 0xEB, 0x52, 0x58, 0x09, 0xF8, 0x69, 0xCA, 0x35, 0x1E, 0xBA, 0x76, 0x06, 0xF6, 0xDC, 0x97, 0xDE, 0x91
     ];
-    let certAuthoritySignature = [
+    let authority_attestation = [
         0xE3, 0x45, 0x45, 0xBD, 0xFC, 0x98, 0x3C, 0xB4, 0xC7, 0xD8, 0x9F, 0x20, 0x9B, 0xB8, 0x6A, 0xC6, 0x8D, 0x75, 0x72, 0x71, 0x77, 0x2B, 0x2E, 0x55, 0x10, 0xC8, 0x22, 0x81, 0x8B, 0x94, 0x57, 0x1E, 0x4C, 0xED, 0xBD, 0xAF, 0x5B, 0x01, 0x35, 0x0B, 0x0F, 0xD1, 0xB6, 0xF4, 0x31, 0xA9, 0x9B, 0x95, 0xD2, 0xAF, 0xF7, 0x02, 0xDE, 0x77, 0xC1, 0x76, 0x11, 0x1B, 0x05, 0x3D, 0xD6, 0xC2, 0x5B, 0x0A
     ];
 
-    let cameraPubKeyX = [
+    let camera_pubkey_x = [
         0xAC, 0x63, 0x8F, 0x14, 0x18, 0x1F, 0x3A, 0xD3, 0x36, 0xA2, 0xC4, 0x97, 0x9E, 0xEF, 0x36, 0x38, 0x9C, 0x56, 0xF3, 0x10, 0x1F, 0x5B, 0xEA, 0x57, 0xF9, 0xF7, 0x9F, 0x8A, 0xB5, 0xE2, 0x77, 0x6D
     ];
-    let cameraPubKeyY = 0x02;
+    let camera_pubkey_y_sign = 0x02;
 
-    let mut cameraPubKey_compressed: [u8; 33] = [0; 33];
-    cameraPubKey_compressed[0] = cameraPubKeyY;
+    let mut camera_pubkey_compressed: [u8; 33] = [0; 33];
+    camera_pubkey_compressed[0] = camera_pubkey_y_sign;
     for i in 0..32 {
-        cameraPubKey_compressed[i+1] = cameraPubKeyX[i];
+        camera_pubkey_compressed[i+1] = camera_pubkey_x[i];
     }
 
     println("Compressed PubKey:");
-    println(cameraPubKey_compressed);
+    println(camera_pubkey_compressed);
 
     // Get the Hash of the Camera Pubkey.
-    let camPubKeyHash = dep::std::hash::blake3(cameraPubKey_compressed);
+    let camera_pubkey_hash = dep::std::hash::blake3(camera_pubkey_compressed);
 
     println("Hash of Compressed PubKey:");
-    println(camPubKeyHash);
+    println(camera_pubkey_hash);
 
     let camera_is_certified: bool = ecdsa_verify(
-        certAuthorityPubkeyX,
-        certAuthorityPubkeyY,
-        certAuthoritySignature,
-        camPubKeyHash
+        authority_pubkey_x,
+        authority_pubkey_y,
+        authority_attestation,
+        camera_pubkey_hash
     );
 
     if camera_is_certified == true {
