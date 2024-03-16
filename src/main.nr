@@ -47,7 +47,7 @@ fn gen_unencrypted_camera_id(
     let mut cameraId: [u8; 64] = [0; 64];
 
     // Append The Nonce To cameraId
-    for i in 0..30 {
+    for i in 0..31 {
         cameraId[i] = randomNonce[i];
     }
 
@@ -55,7 +55,7 @@ fn gen_unencrypted_camera_id(
     cameraId[31] = cameraPubKeyY;
 
     // Append The Camera Pubkey X to cameraID.
-    for i in 0..31 {
+    for i in 0..32 {
         cameraId[i+32] = cameraPubKeyX[i];
     }
 
@@ -73,8 +73,8 @@ fn gen_camera_id(
     // Get Encrypted Camera ID 
     let cameraId: [u8; 64] = gen_unencrypted_camera_id(randomNonce, cameraPubKeyY, cameraPubKeyX);
     let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
-    for i in 0..(cameraId_chunk.len() - 1) {
-        for n in 0..15 {
+    for i in 0..cameraId_chunk.len() {
+        for n in 0..16 {
             cameraId_chunk[i][n] = cameraId[((i*8) + n)];
         }
     }
@@ -96,8 +96,8 @@ fn gen_camera_id(
 
     // Convert Formats.
     let mut encryptedCameraId: [u8; 64] = [0; 64];
-    for i in 0..(encryptedCameraId_bytes.len() - 1) {
-        for n in 0..15 {
+    for i in 0..encryptedCameraId_bytes.len() {
+        for n in 0..16 {
             encryptedCameraId[((i * 8) + n)] = encryptedCameraId_bytes[i][n];
         }
     }
@@ -131,9 +131,9 @@ fn main(
     );
 
     // Get the Camera Pubkey in its Compressed Form.
-    let mut cameraPubKey_compressed: [u8; 32] = [0; 32];
+    let mut cameraPubKey_compressed: [u8; 33] = [0; 33];
     cameraPubKey_compressed[0] = cameraPubKeyY;
-    for i in 0..31 {
+    for i in 0..32 {
         cameraPubKey_compressed[i+1] = cameraPubKeyX[i];
     }
 
@@ -164,6 +164,79 @@ fn main(
     assert(image_is_attested);
     assert(camera_is_certified);
     assert(cameraIdentifier == assertedCameraIdentifier);
+}
+
+#[test]
+fn test_camera_id_generation() {
+    let camera_id = gen_unencrypted_camera_id(
+        [
+        0x14, 0xE5, 0x0E, 0xC3, 0x5D, 0xDE, 0xE0, 0xBD, 0x40, 0x13, 0x4D, 0xA8, 0x02, 0x32, 0x49, 0xC7, 0x15, 0x23, 0x19, 0x24, 0xCC, 0x3C, 0xFD, 0x3C, 0xDD, 0x95, 0x07, 0x15, 0xEB, 0xB9, 0xD5
+    ],
+        0x02,
+        [
+        0xAC, 0x63, 0x8F, 0x14, 0x18, 0x1F, 0x3A, 0xD3, 0x36, 0xA2, 0xC4, 0x97, 0x9E, 0xEF, 0x36, 0x38, 0x9C, 0x56, 0xF3, 0x10, 0x1F, 0x5B, 0xEA, 0x57, 0xF9, 0xF7, 0x9F, 0x8A, 0xB5, 0xE2, 0x77, 0x6D
+    ]
+    );
+    println(camera_id);
+
+    let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
+    for i in 0..4 {
+        for n in 0..16 {
+            cameraId_chunk[i][n] = camera_id[((i*8) + n)];
+        }
+    }
+    println(cameraId_chunk)
+}
+
+#[test]
+fn text_camera_id_encryption() {
+    // TODO
+}
+
+#[test]
+fn test_ec_verification() {
+    let certAuthorityPubkeyX = [
+        0xA3, 0x8C, 0x57, 0xDB, 0xA6, 0x2C, 0x3C, 0x67, 0x32, 0xDA, 0x00, 0xFE, 0x33, 0x6F, 0x4B, 0x28, 0xC0, 0x79, 0x7A, 0x39, 0xB7, 0xCE, 0x73, 0x7A, 0x1A, 0xE6, 0xC6, 0x90, 0x60, 0xDF, 0xEE, 0xE4
+    ];
+    let certAuthorityPubkeyY = [
+        0x76, 0xB0, 0x00, 0xC3, 0x35, 0xC1, 0x65, 0x35, 0xB1, 0x6D, 0xAE, 0x53, 0xF9, 0x91, 0xB7, 0xEB, 0x52, 0x58, 0x09, 0xF8, 0x69, 0xCA, 0x35, 0x1E, 0xBA, 0x76, 0x06, 0xF6, 0xDC, 0x97, 0xDE, 0x91
+    ];
+    let certAuthoritySignature = [
+        0xE3, 0x45, 0x45, 0xBD, 0xFC, 0x98, 0x3C, 0xB4, 0xC7, 0xD8, 0x9F, 0x20, 0x9B, 0xB8, 0x6A, 0xC6, 0x8D, 0x75, 0x72, 0x71, 0x77, 0x2B, 0x2E, 0x55, 0x10, 0xC8, 0x22, 0x81, 0x8B, 0x94, 0x57, 0x1E, 0x4C, 0xED, 0xBD, 0xAF, 0x5B, 0x01, 0x35, 0x0B, 0x0F, 0xD1, 0xB6, 0xF4, 0x31, 0xA9, 0x9B, 0x95, 0xD2, 0xAF, 0xF7, 0x02, 0xDE, 0x77, 0xC1, 0x76, 0x11, 0x1B, 0x05, 0x3D, 0xD6, 0xC2, 0x5B, 0x0A
+    ];
+
+    let cameraPubKeyX = [
+        0xAC, 0x63, 0x8F, 0x14, 0x18, 0x1F, 0x3A, 0xD3, 0x36, 0xA2, 0xC4, 0x97, 0x9E, 0xEF, 0x36, 0x38, 0x9C, 0x56, 0xF3, 0x10, 0x1F, 0x5B, 0xEA, 0x57, 0xF9, 0xF7, 0x9F, 0x8A, 0xB5, 0xE2, 0x77, 0x6D
+    ];
+    let cameraPubKeyY = 0x02;
+
+    let mut cameraPubKey_compressed: [u8; 33] = [0; 33];
+    cameraPubKey_compressed[0] = cameraPubKeyY;
+    for i in 0..32 {
+        cameraPubKey_compressed[i+1] = cameraPubKeyX[i];
+    }
+
+    println("Compressed PubKey:");
+    println(cameraPubKey_compressed);
+
+    // Get the Hash of the Camera Pubkey.
+    let camPubKeyHash = dep::std::hash::blake3(cameraPubKey_compressed);
+
+    println("Hash of Compressed PubKey:");
+    println(camPubKeyHash);
+
+    let camera_is_certified: bool = ecdsa_verify(
+        certAuthorityPubkeyX,
+        certAuthorityPubkeyY,
+        certAuthoritySignature,
+        camPubKeyHash
+    );
+
+    if camera_is_certified == true {
+        println("Verification Works.")
+    } else {
+        println("Verification Doesn't Work.")
+    }
 }
 
 #[test]

@@ -10,6 +10,7 @@ from bn254 import curve
 from bn254.ecp import *
 from bn254.ecp import generator as generator
 from bn254.ecp import ECp as ECp
+import hashlib
 import os
 import io
 
@@ -59,7 +60,7 @@ def gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x):
 def gen_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x, ecdh_scalar, keeper_pk_x, keeper_pk_y):
     camera_id = gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x)
     
-    ecdh_key = BabyJubJub_ECDH(random_nonce, keeper_pk_x, keeper_pk_y)
+    ecdh_key = BabyJubJub_ECDH(ecdh_scalar, keeper_pk_x, keeper_pk_y)
     ecdh_key_bytes = ecdh_key.to_bytes(32, 'little')
     ecdh_key_16 = ecdh_key_bytes[16:32]
     
@@ -95,15 +96,15 @@ def hash_data(data):
 
 def sign_data(private_key_bytes, data_hash):
     priv_key = secp256k1.PrivateKey(private_key_bytes)
-    signature = priv_key.ecdsa_sign_recoverable(data_hash, raw=True)
-    serialized_sig = priv_key.ecdsa_recoverable_serialize(signature)
+    signature = priv_key.ecdsa_sign(data_hash, raw=True)
+    serialized_sig = priv_key.ecdsa_serialize_compact(signature)
     return serialized_sig, priv_key.pubkey.serialize(compressed=True)
 
 def getPubkey(private_key_hex):
     private_key_bytes = bytes.fromhex(private_key_hex)
     priv_key = secp256k1.PrivateKey(private_key_bytes)
-    compressed_pub_key = priv_key.pubkey.serialize(compressed=False)
-    y, x = compressed_pub_key.hex()[2:66], compressed_pub_key.hex()[66:130]
+    pub_key = priv_key.pubkey.serialize(compressed=False)
+    x, y = pub_key.hex()[2:66], pub_key.hex()[66:130]
     return x, y
 
 def main():
@@ -120,22 +121,28 @@ def main():
 
     authorityPrivKey = 'ec28f06ae04f2ec6ae04f228f3b5e71d85971df7edbf0f3b5e71d85971df7edb'
     authority_private_key_bytes = bytes.fromhex(authorityPrivKey)
-    authority_camera_certificate = sign_data(authority_private_key_bytes, hash_data(compressed_pub_key))[0][0].hex()
+    authority_camera_certificate, useless = sign_data(authority_private_key_bytes, hash_data(compressed_pub_key))
+    print(len(authority_camera_certificate))
+    authority_camera_certificate = authority_camera_certificate.hex()
+    print([x for x in compressed_pub_key])
+    print([x for x in hash_data(compressed_pub_key)])
     trustedX, trustedY = getPubkey(authorityPrivKey)
     
     print("randomNonce =", return_byte_array_str(random_nonce))
     print("ecdh_scalar =", f"0x{ecdh_scalar}")
     print("cameraPubKeyX =", return_byte_array_str(compressed_pub_key.hex()[2:66]))
     print("cameraPubKeyY =", f"0x{compressed_pub_key.hex()[:2]}")
-    print("cameraAttestationSignature =", return_byte_array_str(serialized_sig[0].hex()))
+    print("cameraAttestationSignature =", return_byte_array_str(serialized_sig.hex()))
     print("keeperKey = [", ''.join(["0x", keeperX.hex()]), ",", ''.join(["0x", keeperY.hex()]), "]")
     print("certAuthorityPubkeyX =", return_byte_array_str(trustedX))
     print("certAuthorityPubkeyY =", return_byte_array_str(trustedY))
     print("certAuthoritySignature =", return_byte_array_str(authority_camera_certificate))
     print("imageHash =", return_byte_array_str(hash_data(image_data).hex()))
-
-    #print(gen_unencrypted_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66]).hex())
     print("assertedCameraIdentifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, keeperX, keeperY).hex()))
+
+    print("TESTS")
+    camid =  [x for x in gen_unencrypted_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66])]
+    print(camid)
 
 if __name__ == '__main__':
     main()
