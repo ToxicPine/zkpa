@@ -1,37 +1,23 @@
-use dep::std::ec::tecurve::affine::{Curve, Point};
-use dep::std::ec::tecurve::affine::Point as G;
 use dep::std::ecdsa_secp256k1::verify_signature as ecdsa_verify;
 use dep::aes::aes_128_enc as aes_128_enc;
+use dep::curves::ed25519::{ed25519, Ed25519};
+use dep::curves::ed25519::fp::PrimeField as Fp;
+use dep::curves::ed25519::tecurve::{Point, Curve};
+use dep::bigint::BigUint56;
+use dep::field::PrimeField as PrimeField;
 
-fn babyjub_derive_pubkey(priv_key: Field) -> Point {
-    let bjj = Curve::new(
-        168700,
-        168696,
-        G::new(
-            995203441582195749578291179787384436505546430278305826713579947235728471134,
-            5472060717959818805561601436314318772137091100104008585924551046643952123905
-        )
-    );
+fn curve25519_get_pubkey(priv_key: Field) -> Point {
+    let Ed25519 { curve, cofactor: _cof } = ed25519();
 
-    let base_pt = Point::new(
-        5299619240641551281634865583518297030282874472190772894086521144482721001553,
-        16950150798460657717958625567821834550301663161624707787222815936182638968203
-    );
-
-    bjj.mul(priv_key, base_pt)
+    curve.mul(priv_key, curve.gen)
 }
 
-fn babyjub_scalarmul(priv_key: Field, base_pt: Point) -> Point {
-    let bjj = Curve::new(
-        168700,
-        168696,
-        G::new(
-            995203441582195749578291179787384436505546430278305826713579947235728471134,
-            5472060717959818805561601436314318772137091100104008585924551046643952123905
-        )
-    );
+fn curve25519_ecdh(priv_key: [u8; 32], base_pt: Point) -> [u8; 32] {
+    let Ed25519 { curve, cofactor: _cof } = ed25519();
+    let priv_key_u8: [u8] = [i in priv_key];
 
-    bjj.mul(priv_key, base_pt)
+    priv_key_fp = Fp::from_bytes(priv_key_u8);
+    curve.mul(priv_key, base_pt).x.to_be_bytes(32);
 }
 
 // The Camera ID (64 bytes), which will be encrypted, consists of:
@@ -67,7 +53,7 @@ fn gen_camera_id(
     randomNonce: [u8; 31], // This Is Used To Randomise The Cypertext
     cameraPubKeyY: u8, // Y-Coord of Public Key Of Camera Signer, Positive or Negative
     cameraPubKeyX: [u8; 32], // X-Coord of Public Key of Camera Signer
-    ecdhScalar: Field, // ECDH Scalar for Symmetric Key Encryption
+    ecdhScalar: [u8; 32], // ECDH Scalar for Symmetric Key Encryption
     keeperKey: Point // Key of the Blacklist Keeper
 ) -> [u8; 64] {
     // Get Encrypted Camera ID 
@@ -75,12 +61,12 @@ fn gen_camera_id(
     let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..cameraId_chunk.len() {
         for n in 0..16 {
-            cameraId_chunk[i][n] = cameraId[((i*8) + n)];
+            cameraId_chunk[i][n] = cameraId[((i * 16) + n)];
         }
     }
 
     // Calculate ECDH Shared Key, Use First 16 Bytes Of X-Coord As Key.
-    let ecdh_key = babyjub_scalarmul(ecdhScalar, keeperKey).x.to_be_bytes(32);
+    let ecdh_key = curve25519_ecdh(ecdhScalar, keeperKey);
     let mut ecdh_key_16: [u8; 16] = [0; 16];
     for i in 0..16 {
         ecdh_key_16[i] = ecdh_key[i];
@@ -97,28 +83,42 @@ fn gen_camera_id(
     let mut encryptedCameraId: [u8; 64] = [0; 64];
     for i in 0..encryptedCameraId_bytes.len() {
         for n in 0..16 {
-            encryptedCameraId[((i * 8) + n)] = encryptedCameraId_bytes[i][n];
+            encryptedCameraId[((i * 16) + n)] = encryptedCameraId_bytes[i][n];
         }
     }
 
     encryptedCameraId
 }
 
+fn is_y_negative(bytes: [u8; 32]) -> bool {
+    let is_neg = bytes[0] & 1;
+
+    is_neg as bool
+}
+
 fn main(
     randomNonce: [u8; 31],
-    ecdhScalar: Field,
-    cameraPubKeyX: pub [u8; 32],
-    cameraPubKeyY: u8,
+    ecdhScalar: [u8; 32],
+    cameraPubKeyX: [u8; 32],
+    cameraPubKeyFullY: [u8; 32],
     cameraAttestationSignature: [u8; 64],
-    keeperKey: [Field; 2],
+    keeperKey: pub [[u8; 32]; 2],
     certAuthorityPubkeyX: pub [u8; 32],
     certAuthorityPubkeyY: pub [u8; 32],
     certAuthoritySignature: [u8; 64],
     imageHash: pub [u8; 32],
     assertedCameraIdentifier: pub [u8; 64]
 ) {
+    // Check Whether The Pubkey Is Positive or Negative.
+    let mut cameraPubKeyY: u8 = 0x02;
+    let mut ySign: bool = false;
+    ySign = is_y_negative(cameraPubKeyFullY);
+    if ySign == true {
+        cameraPubKeyY = 0x03;
+    }
+
     // Represent Keeper Key as Point.
-    let keeperKeyPoint = Point::new(keeperKey[0], keeperKey[1]);
+    let keeperKey_Point = Point::new(keeperKey[0], keeperKey[1]);
 
     // Get Camera Identifier.
     let cameraIdentifier = gen_camera_id(
@@ -126,7 +126,7 @@ fn main(
         cameraPubKeyY,
         cameraPubKeyX,
         ecdhScalar,
-        keeperKeyPoint
+        keeperKey_Point
     );
 
     // Get the Camera Pubkey in its Compressed Form.
@@ -146,10 +146,6 @@ fn main(
         certAuthoritySignature,
         camPubKeyHash
     );
-
-    // Get Camera Pubkey As Uncompressed Bytes.
-    let mut cameraPubKeyFullY: [u8; 32] = [0; 32];
-    // GET THE Y-COORD BASED ON POSITIVE OR NEGATIVE AS BYTES
 
     // Check Image Attestation.
     let image_is_attested: bool = ecdsa_verify(
@@ -181,7 +177,7 @@ fn test_camera_id_generation() {
     let mut cameraId_chunk: [[u8; 16]; 4] = [[0; 16]; 4];
     for i in 0..4 {
         for n in 0..16 {
-            cameraId_chunk[i][n] = camera_id[((i*8) + n)];
+            cameraId_chunk[i][n] = camera_id[((i * 16) + n)];
         }
     }
     println(cameraId_chunk)
@@ -189,25 +185,11 @@ fn test_camera_id_generation() {
 
 #[test]
 fn test_keyagreement() {
-    let ecdhScalar: Field = 0x02;
+    let ecdhScalar: [u8; 32] = [0x02; 32];
     let keeperKey = Point::new(0x11, 0x11);
-    let ecdh_key = babyjub_scalarmul(ecdhScalar, keeperKey).x;
+    let ecdh_key = curve25519_ecdh(ecdhScalar, keeperKey);
     println("Agreed Key:");
     println(ecdh_key);
-    let ecdh_key_bytes = ecdh_key.to_be_bytes(32);
-
-    let mut ecdh_key32: [u8; 32] = [0; 32];
-    for i in 0..32 {
-        ecdh_key32[i] = ecdh_key_bytes[i];
-    }
-    //let mut ecdh_key_bytes: [u8; 16] = [0; 16];
-    //for i in 0..16 {
-    //    // Make ecdh_key Into a 16 Byte Key.
-    //    ecdh_key_bytes[i] = ((ecdh_key >> (i * 8)) & 0xFF) as u8;
-    //}
-
-    println("Agreed Key As 32-byte Hex:");
-    println(ecdh_key32);
 }
 
 #[test]

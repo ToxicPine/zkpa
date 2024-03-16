@@ -122,27 +122,20 @@ def main():
     authorityPrivKey = 'ec28f06ae04f2ec6ae04f228f3b5e71d85971df7edbf0f3b5e71d85971df7edb'
     authority_private_key_bytes = bytes.fromhex(authorityPrivKey)
     authority_camera_certificate, useless = sign_data(authority_private_key_bytes, hash_data(compressed_pub_key))
-    print(len(authority_camera_certificate))
     authority_camera_certificate = authority_camera_certificate.hex()
-    print([x for x in compressed_pub_key])
-    print([x for x in hash_data(compressed_pub_key)])
     trustedX, trustedY = getPubkey(authorityPrivKey)
     
     print("randomNonce =", return_byte_array_str(random_nonce))
-    print("ecdh_scalar =", f"0x{ecdh_scalar}")
+    print("ecdhScalar =", return_byte_array_str(ecdh_scalar))
     print("cameraPubKeyX =", return_byte_array_str(compressed_pub_key.hex()[2:66]))
     print("cameraPubKeyY =", f"0x{compressed_pub_key.hex()[:2]}")
     print("cameraAttestationSignature =", return_byte_array_str(serialized_sig.hex()))
-    print("keeperKey = [", ''.join(["0x", keeperX.hex()]), ",", ''.join(["0x", keeperY.hex()]), "]")
+    print("keeperKey = [", ', '.join([return_byte_array_str(keeperX.hex()), return_byte_array_str(keeperY.hex())]), "]")
     print("certAuthorityPubkeyX =", return_byte_array_str(trustedX))
     print("certAuthorityPubkeyY =", return_byte_array_str(trustedY))
     print("certAuthoritySignature =", return_byte_array_str(authority_camera_certificate))
     print("imageHash =", return_byte_array_str(hash_data(image_data).hex()))
     print("assertedCameraIdentifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, keeperX, keeperY).hex()))
-
-    print("TESTS")
-    camid =  [x for x in gen_unencrypted_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66])]
-    print(camid)
 
 if __name__ == '__main__':
     main()

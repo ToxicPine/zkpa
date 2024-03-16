@@ -6,3 +6,6 @@ compiler_version = ">=0.25.0"
 
 [dependencies]
 aes = { tag = "v0.4.0", git = "https://github.com/TaceoLabs/noir-aes" }
+bigint = { tag = "v0.1.1", git = "https://github.com/RajeshRk18/noir_crypto", directory = "crates/biguint" }
+curves = { tag = "v0.1.1", git = "https://github.com/RajeshRk18/noir_crypto", directory = "crates/curves" }
+field = { tag = "v0.1.1", git = "https://github.com/RajeshRk18/noir_crypto", directory = "crates/primefield" }
