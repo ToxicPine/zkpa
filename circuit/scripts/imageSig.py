@@ -19,8 +19,8 @@ random_nonce = "14e50ec35ddee0bd40134da8023249c715231924cc3cfd3cdd950715ebb9d5"
 # consortium private key is 0x10203040506
 consortiumPubKeyX = "022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132"
 consortiumPubKeyY = "076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11"
-decryptPk_x = "255679baf28978b9b98db6c36283b709233c7acedc7db13e0b475a1710be1352"
-decryptPk_y = "243837430f4955e3de9539fbda12361313ff558eaef45ef4f41c6aa5a974b807"
+generated_identifier_deckey_x = "255679baf28978b9b98db6c36283b709233c7acedc7db13e0b475a1710be1352"
+generated_identifier_deckey_y = "243837430f4955e3de9539fbda12361313ff558eaef45ef4f41c6aa5a974b807"
 
 def gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x):
     camera_id = bytearray(64)
@@ -108,12 +108,12 @@ def main():
     print("cameraPubKeyFullY =", return_byte_array_str(camera_pubkey_y))
     print("cameraAttestationSignature =", return_byte_array_str(serialized_sig.hex()))
     print("consortiumPubKey = [", ', '.join([f"'0x{consortiumPubKeyX}'", f"'0x{consortiumPubKeyY}'"]), "]")
-    print("assertedDecryptPk = [", ', '.join([f"'0x{decryptPk_x}'", f"'0x{decryptPk_y}'"]), "]")
+    print("assertedDecryptPk = [", ', '.join([f"'0x{generated_identifier_deckey_x}'", f"'0x{generated_identifier_deckey_y}'"]), "]")
     print("certAuthorityPubkeyX =", return_byte_array_str(trustedX))
     print("certAuthorityPubkeyY =", return_byte_array_str(trustedY))
     print("certAuthoritySignature =", return_byte_array_str(authority_camera_certificate))
     print("imageHash =", return_byte_array_str(hash_data(image_data).hex()))
-    print("assertedCameraIdentifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, consortiumPubKeyX, consortiumPubKeyY).hex()))
+    print("assertedgenerated_camera_identifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, consortiumPubKeyX, consortiumPubKeyY).hex()))
 
 if __name__ == '__main__':
     main()

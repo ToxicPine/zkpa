@@ -58,7 +58,7 @@ def main(image_path, private_key_hex, authority_private_key_hex, consortium_pubk
 
     #prover_key = babyjubjub_generate_pubkey(ecdh_scalar_hex)
     prover_key = [0x0121, 0xa16a]
-    #ecdh_key_hex = 
+    #ecdh_key_hex = babyjubjub_ecdh(ecdh_scalar_hex, consortium_pubkey)
     #asserted_camera_identifier = generate_camera_id(nonce_hex, pub_key_compressed, ecdh_key_hex)
     asserted_camera_identifier = randbytes(64)
 
