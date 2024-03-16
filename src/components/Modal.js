@@ -1,3 +1,5 @@
+import React from "react";
+
 export const SuccessDialog = ({ open, onClose, title, message }) => {
   if (!open) return null;
 

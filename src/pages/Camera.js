@@ -1,11 +1,18 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { saveAs } from 'file-saver';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { SuccessDialog, WaitDialog } from '../components/Modal';
 
 const Camera = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const [capturedImageDataUrl, setCapturedImageDataUrl] = useState(null);
   const [isCameraRunning, setIsCameraRunning] = useState(false);
-  const [stream, setStream] = useState(null); // To keep track of the media stream
+  const [stream, setStream] = useState(null);
+  const [isImageCaptured, setIsImageCaptured] = useState(false);
+  const [isWaitOpen, setIsWaitOpen] = useState(false);
+  // const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [witnessData, setWitnessData] = useState({});
 
   useEffect(() => {
     return () => {
@@ -24,6 +31,7 @@ const Camera = () => {
             videoRef.current.srcObject = stream;
             videoRef.current.play();
             setIsCameraRunning(true);
+            setIsImageCaptured(false);
           })
           .catch(err => {
             console.error("Error accessing the camera", err);
@@ -33,33 +41,85 @@ const Camera = () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setIsCameraRunning(false);
+        setIsImageCaptured(false);
       }
     }
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
+    setIsImageCaptured(true);
+    setIsWaitOpen(true);
+
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setIsCameraRunning(false);
+    }
+
     const context = canvasRef.current.getContext('2d');
     context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-    const imageDataUrl = canvasRef.current.toDataURL('image/png');
-    setCapturedImageDataUrl(imageDataUrl);
+    canvasRef.current.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append('image', blob, 'image.png');
+
+      try {
+        const response = await fetch('/get_witness', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          console.log('Witness data fetched successfully');
+        } else {
+          console.error('Error sending image');
+        }
+
+        const data = await response.json();
+        setWitnessData(data);
+        setIsWaitOpen(false);
+      } catch (error) {
+        console.error('Error sending image:', error);
+        setIsWaitOpen(false);
+        toast.error("Something wrong during fetching witness data of image")
+      }
+    }, 'image/png');
   };
+
+
+  const downloadImage = () => {
+    const context = canvasRef.current.getContext('2d');
+    context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+    canvasRef.current.toBlob(blob => {
+      saveAs(blob, "web-image.png");
+      toast.success("Image captured successfully! You can download.");
+    }, 'image/png');
+  }
 
   return (
     <div className="text-white p-4 flex flex-col items-center">
-      <div className="mb-4">
-        <video ref={videoRef} className="max-w-full"></video>
-        <button onClick={toggleCamera} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-          {isCameraRunning ? 'Stop Camera' : 'Start Camera'}
-        </button>
-        <button onClick={capturePhoto} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Capture Photo</button>
+      <ToastContainer position="bottom-right" />
+      {/* <SuccessDialog open={isSuccessOpen} onClose={() => { setIsSuccessOpen(false) }} title={'Success'} message={'You can download the signatured image now.'} /> */}
+      <WaitDialog open={isWaitOpen} onClose={() => setIsWaitOpen(false)} />
+      <div className="bg-gray-200 border-2 border-gray-400 max-w-full" style={{ width: '640px', height: '480px', backgroundColor: 'black' }}>
+        <video ref={videoRef} className="max-w-full" style={{ display: isImageCaptured ? 'none' : 'block' }}></video>
+        <canvas ref={canvasRef} className={`max-w-full ${!isImageCaptured ? 'bg-gray-300' : ''}`} width="640" height="480" style={{ display: isImageCaptured ? 'block' : 'none' }}></canvas>
       </div>
-      {capturedImageDataUrl && (
-        <div className="text-center">
-          <h3 className="text-xl mb-2">Captured Image:</h3>
-          <img src={capturedImageDataUrl} alt="Captured" className="max-w-full" />
-        </div>
-      )}
-      <canvas ref={canvasRef} className="hidden" width="640" height="480"></canvas>
+      <div className="flex justify-center mt-4">
+        {!isImageCaptured && (
+          <button onClick={toggleCamera} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            {isCameraRunning ? 'Stop Camera' : 'Start Camera'}
+          </button>
+        )}
+        {isCameraRunning && !isImageCaptured && (
+          <button onClick={capturePhoto} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-2">
+            Capture Photo
+          </button>
+        )}
+        {isImageCaptured && (
+          <button onClick={toggleCamera} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Retake Photo
+          </button>
+        )}
+      </div>
     </div>
   );
 };
