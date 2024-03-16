@@ -7,7 +7,8 @@ import FileCopyIcon from '@mui/icons-material/FileCopy';
 import uploadAnimation from '../assets/upload-animation.gif';
 
 const FileUploader = () => {
-  const jsConfetti = new JSConfetti()
+  const canvas = document.getElementsByClassName('App')
+  const jsConfetti = new JSConfetti(canvas);
 
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -42,7 +43,11 @@ const FileUploader = () => {
   }, [showAnimatedPreview]);
 
   const successAction = () => {
-    jsConfetti.addConfetti()
+    jsConfetti.addConfetti({
+      confettiColors: [
+        '#ff0a54', '#ff477e', '#ff7096', '#ff85a1', '#fbb1bd', '#f9bec7',
+      ],
+    });
   }
 
   const handleFileChange = (e) => {
@@ -109,7 +114,7 @@ const FileUploader = () => {
   };
 
   const handleVerify = () => {
-    // 在这里添加验证逻辑
+    successAction();
     console.log('Verifying image...');
   };
 
