@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImage from '../assets/icon.png'; // Ensure the path to your image is correct
+import logoImage from '../assets/logo.png';
 
 const Header = () => {
   return (
