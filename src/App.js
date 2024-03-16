@@ -1,19 +1,19 @@
+import React from 'react';
 import './App.css';
-import FileUploader from './components/FileUploader';
 import Header from './components/Header';
-import Share from './components/Share';
+import Home from './pages/Home';
+import Camera from './pages/Camera';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 function App() {
   return (
-    <div className="App">
-      <div className="flex flex-col">
-        <Header />
-        <main className="flex-1">
-          <FileUploader />
-        </main>
-        <Share />
-      </div>
-    </div>
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/camera" element={<Camera />} />
+      </Routes>
+    </Router>
   );
 }
 

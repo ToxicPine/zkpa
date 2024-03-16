@@ -42,6 +42,12 @@ const FileUploader = () => {
     return () => clearTimeout(timeoutId);
   }, [showAnimatedPreview]);
 
+  const zkProof = async () => {
+    // const inputs = { imageHash }
+    // const verification = await noir.verifyProof(metadata.proof);
+    // return verification;
+  }
+
   const successAction = () => {
     jsConfetti.addConfetti({
       confettiColors: [
