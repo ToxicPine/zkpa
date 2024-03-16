@@ -1,11 +1,13 @@
 import React from 'react';
+import logoImage from '../assets/icon.png'; // Ensure the path to your image is correct
 
 const Header = () => {
   return (
-    <header className="bg-gray-800 py-4">
+    <header className="bg-gray-800 py-1">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-white">ZKPA</h1>
+          {/* Use img tag with the imported logo image */}
+          <img src={logoImage} alt="ZKPA Logo" className="h-16" />
         </div>
         <nav>
           <ul className="flex space-x-4">
