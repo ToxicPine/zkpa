@@ -14,32 +14,13 @@ import hashlib
 import os
 import io
 
-def BabyJubJub_ECDH(scalar, keeper_pk_x, keeper_pk_y):
-    scalar = int.from_bytes(bytes.fromhex(scalar)) % curve.r
-
-    keeper_point = ECp()
-    keeper_point.setxy(
-        int.from_bytes(keeper_pk_x), 
-        int.from_bytes(keeper_pk_y)
-    )
-    
-    ecdh_point = scalar * keeper_point
-    ecdh_key, lsb_y = ecdh_point.getxs()
-
-    return ecdh_key
-
-def getJubJubPubkey(scalar):
-    G = generator()
-    scalar = big.from_bytes(bytes.fromhex(scalar)) % curve.r
-
-    Y = scalar * G
-    pk = Y.toBytes(False)
-    y = pk[1:33]
-    x = pk[33:68]
-    return x, y
-
 ecdh_scalar = "3f9e36da67670ab97e60c2d6138e7049b79e64ef"
 random_nonce = "14e50ec35ddee0bd40134da8023249c715231924cc3cfd3cdd950715ebb9d5"
+# consortium private key is 0x10203040506
+consortiumPubKeyX = "022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132"
+consortiumPubKeyY = "076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11"
+decryptPk_x = "255679baf28978b9b98db6c36283b709233c7acedc7db13e0b475a1710be1352"
+decryptPk_y = "243837430f4955e3de9539fbda12361313ff558eaef45ef4f41c6aa5a974b807"
 
 def gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x):
     camera_id = bytearray(64)
@@ -60,13 +41,12 @@ def gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x):
 def gen_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x, ecdh_scalar, keeper_pk_x, keeper_pk_y):
     camera_id = gen_unencrypted_camera_id(random_nonce, camera_pubkey_y, camera_pubkey_x)
     
-    ecdh_key = BabyJubJub_ECDH(ecdh_scalar, keeper_pk_x, keeper_pk_y)
-    ecdh_key_bytes = ecdh_key.to_bytes(32, 'little')
-    ecdh_key_16 = ecdh_key_bytes[16:32]
+    # Pre-Calculated, Since Values Are Hardcoded And Python Doesn't Like BabyJubJub. See tests in Noir to validate.
+    ecdh_key = bytes([1, 235, 39, 113, 46, 171, 235, 252, 178, 0, 51, 33, 198, 103, 237, 184])
     
     # Initialize AES cipher for encryption
     backend = default_backend()
-    cipher = Cipher(algorithms.AES(ecdh_key_16), modes.ECB(), backend=backend)
+    cipher = Cipher(algorithms.AES(ecdh_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     
     # Encrypt camera_id in 16-byte blocks using slicing
@@ -114,10 +94,7 @@ def main():
     private_key_hex = 'ec28f3b5e71d85971df7edbf06ae04f2ec28f3b5e71d85971df7edbf06ae04f2'
     private_key_bytes = bytes.fromhex(private_key_hex)
     serialized_sig, compressed_pub_key = sign_data(private_key_bytes, hashed_data)
-    #camera_pubkey_x, camera_pubkey_y = getPubkey(private_key_hex)
-
-    keeperPrivKey = 'ec28f06ae04f2ec28f3b5e71d85971df7edbf06ae04f2f3b5e71d85971df7edb'
-    keeperX, keeperY = getJubJubPubkey(keeperPrivKey)
+    camera_pubkey_x, camera_pubkey_y = getPubkey(private_key_hex)
 
     authorityPrivKey = 'ec28f06ae04f2ec6ae04f228f3b5e71d85971df7edbf0f3b5e71d85971df7edb'
     authority_private_key_bytes = bytes.fromhex(authorityPrivKey)
@@ -128,14 +105,15 @@ def main():
     print("randomNonce =", return_byte_array_str(random_nonce))
     print("ecdhScalar =", f"'0x{ecdh_scalar}'")
     print("cameraPubKeyX =", return_byte_array_str(compressed_pub_key.hex()[2:66]))
-    print("cameraPubKeyFullY =", f"0x{compressed_pub_key.hex()[:2]}")
+    print("cameraPubKeyFullY =", return_byte_array_str(camera_pubkey_y))
     print("cameraAttestationSignature =", return_byte_array_str(serialized_sig.hex()))
-    print("consortiumPubKey = [", ', '.join([return_byte_array_str(keeperX.hex()), return_byte_array_str(keeperY.hex())]), "]")
+    print("consortiumPubKey = [", ', '.join([f"'0x{consortiumPubKeyX}'", f"'0x{consortiumPubKeyY}'"]), "]")
+    print("assertedDecryptPk = [", ', '.join([f"'0x{decryptPk_x}'", f"'0x{decryptPk_y}'"]), "]")
     print("certAuthorityPubkeyX =", return_byte_array_str(trustedX))
     print("certAuthorityPubkeyY =", return_byte_array_str(trustedY))
     print("certAuthoritySignature =", return_byte_array_str(authority_camera_certificate))
     print("imageHash =", return_byte_array_str(hash_data(image_data).hex()))
-    print("assertedCameraIdentifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, keeperX, keeperY).hex()))
+    print("assertedCameraIdentifier =", return_byte_array_str(gen_camera_id(random_nonce, compressed_pub_key.hex()[:2], compressed_pub_key.hex()[2:66], ecdh_scalar, consortiumPubKeyX, consortiumPubKeyY).hex()))
 
 if __name__ == '__main__':
     main()

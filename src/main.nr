@@ -116,9 +116,9 @@ fn get_compressed_y(bytes: [u8; 32]) -> u8 {
 
     // Set 0x02 if Even, 0x03 if Odd.
     if (is_neg as bool) == false {
-        0x02
-    } else {
         0x03
+    } else {
+        0x02
     }
 }
 
@@ -212,13 +212,17 @@ fn test_camera_id_generation() {
 
 #[test]
 fn test_key_agreement() {
-    let ecdhScalar: Field = 0x12341234;
+    let ecdhScalar: Field = 0x3f9e36da67670ab97e60c2d6138e7049b79e64ef;
     let consortiumPubKey = bjj_pub_key(0x10203040506);
+    // Consortium X: 0x022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132
+    // Consortium Y: 0x076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11
     let mut ecdh_key = bjj_ecdh(ecdhScalar, consortiumPubKey);
     println("Agreed Key On Prover Side:");
     println(ecdh_key);
 
     let decryptPk = bjj_pub_key(ecdhScalar);
+    println(decryptPk.x);
+    println(decryptPk.y);
     ecdh_key = bjj_ecdh(0x10203040506, decryptPk);
     println("Agreed Key On Verifier Side:");
     println(ecdh_key);
