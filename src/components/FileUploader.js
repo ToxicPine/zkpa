@@ -1,17 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 const FileUploader = () => {
     const [file, setFile] = useState(null);
-    const [progress, setProgress] = useState(0);
-    const [importUrl, setImportUrl] = useState('');
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [importUrl, setImportUrl] = useState('');
+    const [hash, setHash] = useState(null);
+    const [hashByteArray, setHashByteArray] = useState(null);
 
     const { getRootProps, getInputProps } = useDropzone({
         onDrop: (acceptedFiles) => {
             const newFile = acceptedFiles[0];
             setFile(newFile);
             setPreviewUrl(URL.createObjectURL(newFile));
+            handleImageUpload(newFile);
         },
         accept: {
             'image/*': [],
@@ -23,56 +25,70 @@ const FileUploader = () => {
         const newFile = e.target.files[0];
         setFile(newFile);
         setPreviewUrl(URL.createObjectURL(newFile));
+        handleImageUpload(newFile);
     };
 
     const handleImportUrlChange = (e) => {
         setImportUrl(e.target.value);
     };
 
-    const uploadFile = () => {
-        if (file) {
-            // 模拟上传进度
-            const interval = setInterval(() => {
-                setProgress((prevProgress) => {
-                    const newProgress = prevProgress + 20;
-                    if (newProgress >= 100) {
-                        clearInterval(interval);
-                    }
-                    return newProgress;
-                });
-            }, 200);
-        } else if (importUrl) {
-            // 从 URL 导入图片
-            fetch(importUrl)
-                .then((response) => response.blob())
-                .then((blob) => {
-                    const newFile = new File([blob], 'imported-image.jpg', { type: 'image/jpeg' });
-                    setFile(newFile);
-                    setPreviewUrl(URL.createObjectURL(newFile));
-                    // 模拟上传进度
-                    const interval = setInterval(() => {
-                        setProgress((prevProgress) => {
-                            const newProgress = prevProgress + 20;
-                            if (newProgress >= 100) {
-                                clearInterval(interval);
-                            }
-                            return newProgress;
-                        });
-                    }, 200);
-                })
-                .catch((error) => {
-                    console.error('Error importing image:', error);
-                });
+    const handleImportFromUrl = () => {
+        fetchImageFromUrl(importUrl);
+    };
+
+    const fetchImageFromUrl = async (url) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const newFile = new File([blob], 'imported-image.jpg', { type: 'image/jpeg' });
+            setFile(newFile);
+            setPreviewUrl(URL.createObjectURL(newFile));
+            handleImageUpload(newFile);
+        } catch (error) {
+            console.error('Error importing image:', error);
         }
     };
 
-    const handleImportFromUrl = () => {
-        uploadFile();
+    const handleImageUpload = async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+            const response = await fetch('/hash_image', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error uploading image:', errorText);
+                return;
+            }
+
+            const data = await response.json();
+            console.log('Response data:', data);
+            setHash(data.hash_hex);
+            setHashByteArray(data.hash_byte_array);
+        } catch (error) {
+            console.error('Error uploading image:', error);
+        }
+    };
+
+    const handleVerify = () => {
+        // 在这里添加验证逻辑
+        console.log('Verifying image...');
+    };
+
+    const handleReset = () => {
+        setFile(null);
+        setPreviewUrl(null);
+        setImportUrl('');
+        setHash(null);
+        setHashByteArray(null);
     };
 
     return (
-        <div className="flex justify-center items-center h-screen bg-gray-800">
-            <div className="bg-gray-700 rounded-lg p-8 w-2/3 max-w-4xl">
+        <div className="flex justify-center items-center h-screen bg-black">
+            <div className="bg-black rounded-lg p-8 w-2/3 max-w-4xl">
                 <h2 className="text-2xl font-bold text-white mb-6">Upload Image</h2>
                 <div
                     {...getRootProps()}
@@ -87,11 +103,12 @@ const FileUploader = () => {
                                 className="max-h-64 mb-4 rounded-md"
                             />
                             <p className="text-white">{file?.name || 'Imported Image'}</p>
-                            <progress
-                                className="w-full bg-gray-500"
-                                value={progress}
-                                max="100"
-                            ></progress>
+                            {hash && <p className="text-white">Hash: {hash}</p>}
+                            {hashByteArray && (
+                                <p className="text-white">
+                                    Hash Byte Array: [{hashByteArray}]
+                                </p>
+                            )}
                         </div>
                     ) : (
                         <p className="text-gray-400">Drag and Drop image here or Choose file</p>
@@ -120,7 +137,7 @@ const FileUploader = () => {
                             onChange={handleImportUrlChange}
                         />
                         <button
-                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r-md"
+                            className="bg-gray-500 text-white font-bold py-2 px-4 rounded-r-md"
                             onClick={handleImportFromUrl}
                         >
                             Import
@@ -129,13 +146,18 @@ const FileUploader = () => {
                 </div>
                 <p className="text-gray-400 mb-6">Supported formats: Images</p>
                 <p className="text-gray-400 mb-6">Maximum size: 25MB</p>
-                <div className="flex justify-center">
+                <div className="flex justify-end mt-6">
                     <button
-                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        onClick={uploadFile}
-                        disabled={!file && !importUrl}
+                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md mr-4"
+                        onClick={handleVerify}
                     >
-                        Upload
+                        Verify
+                    </button>
+                    <button
+                        className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md"
+                        onClick={handleReset}
+                    >
+                        Reset
                     </button>
                 </div>
             </div>
