@@ -46,33 +46,27 @@ However, total scrubbing of camera signer identities makes blacklists impossible
 
 ## The Step-By-Step
 
-### 1. Camera Certifications
+### 1. Camera Set-Up
 
-Cameras generate keys used for signing in
+Cameras generate keys used for signing on their secure enclave at their time of manufacture. They are also endowed with a certificate by their manufacturer -- a signed version of their own public key which demonstrates the camera's trustworthiness. This is a one-time set-up, the keys and certificate is re-used.
 
 ### 2. User Photo Capture
 
-The camera, being trusted, allows users to capture photos.
+The camera, being trusted, allows users to capture photos, and signs them. It provides the signature and its own certificate of trust.
 
-### 3. Photo Hash Generation
+### 3. Proof Generation
 
-Upon photo upload, the camera uses a hashing function to generate a unique hash value for the photo, ensuring its integrity and uniqueness.
+The camera generates a signature for the photo, proving its genuineness, from the signature data, in ZK, and re-introduces the encrypted signer-identity. This data is saved in the image EXIF.
 
-### 4. Signature Generation
+Note: attempts to tamper with the encrypted signer-identity will cause the proof verification to fail -- this is a vital security feature that we built into the proof circuits.
 
-The camera generates a signature for the photo, proving its genuineness.
+### 6. Verification
 
-### 5. Zero-Knowledge Proof Generation
+Users can verify the proof on-device. If it is correct and corresponds to an authority (such as Sony) that is in their trusted whitelist, the camera is taken to be authentic.
 
-A Zero-Knowledge proof is generated to prove the photo's authenticity without revealing the actual signature. This ensures privacy and security in verifying photo authenticity.
+### 7. Querying or Modifying Blacklist
 
-### 6. Verification and Storage
-
-Users can store the Zero-Knowledge proof along with the photo hash on a blockchain, enabling secure and verifiable photo authenticity.
-
-### 7. Querying and Authenticity Verification
-
-Other users can verify the authenticity of a photo by querying its hash. The application retrieves the corresponding Zero-Knowledge proof and photo hash, verifying the photo's authenticity without revealing its content.
+The encrypted identifier can be sent to the keepers of the blacklist, who will tell you if that camera has been blacklisted before. If you can convince them that the camera identity was used to sign a deepfake, such as in cases of hacking, they will use the encrypted identifier to add the camera identity to the blacklist.
 
 ## Technologies
 
