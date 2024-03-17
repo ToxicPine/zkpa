@@ -11,10 +11,8 @@ This project is for 2024 ETH Golabal London Hackathon.
     <td>
       <img src="./src/assets/banner.png" width="400" height="200">
     </td>
-  </tr>
-  <tr>
-    <td bgcolor="#3240CB">
-      <img src="https://storage.googleapis.com/ethglobal-api-production/events%2Fgyosr%2Flogo%2F1699999130188_ethlondon-blue.svg" width="400" height="200">
+    <td>
+      <img src="./src/assets/eth-london.png" width="400" height="200">
     </td>
   </tr>
 </table>
