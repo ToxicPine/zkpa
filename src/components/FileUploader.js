@@ -5,6 +5,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloseIcon from '@mui/icons-material/Close';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
 import uploadAnimation from '../assets/upload-animation.gif';
+import { SuccessDialog, WaitDialog } from './Modal';
 
 const FileUploader = () => {
   const canvas = document.getElementsByClassName('App')
@@ -14,9 +15,13 @@ const FileUploader = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [importUrl, setImportUrl] = useState('');
   const [hash, setHash] = useState(null);
+  // eslint-disable-next-line
   const [hashByteArray, setHashByteArray] = useState(null);
+  // eslint-disable-next-line
   const [copySuccess, setCopySuccess] = useState('');
   const [showAnimatedPreview, setShowAnimatedPreview] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isWaitOpen, setIsWaitOpen] = useState(false);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -42,17 +47,18 @@ const FileUploader = () => {
     return () => clearTimeout(timeoutId);
   }, [showAnimatedPreview]);
 
-  const zkProof = async () => {
-    // const inputs = { imageHash }
-    // const verification = await noir.verifyProof(metadata.proof);
-    // return verification;
-  }
-
   const successAction = () => {
     jsConfetti.addConfetti({
       confettiColors: [
-        '#ff0a54', '#ff477e', '#ff7096', '#ff85a1', '#fbb1bd', '#f9bec7',
+        '#FF0000', // Red
+        '#FF7F00', // Orange
+        '#FFFF00', // Yellow
+        '#00FF00', // Green
+        '#0000FF', // Blue
+        '#4B0082', // Indigo
+        '#9400D3', // Violet
       ],
+
     });
   }
 
@@ -120,9 +126,16 @@ const FileUploader = () => {
   };
 
   const handleVerify = () => {
-    successAction();
+    setIsWaitOpen(true);
     console.log('Verifying image...');
+
+    setTimeout(() => {
+      successAction();
+      setIsWaitOpen(false);
+      setIsSuccessOpen(true);
+    }, 3000);
   };
+
 
   const handleReset = () => {
     setFile(null);
@@ -135,6 +148,8 @@ const FileUploader = () => {
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-900">
+      <SuccessDialog open={isSuccessOpen} onClose={() => { setIsSuccessOpen(false) }} title={'Success'} message={'Congregation! This image has been verified bt ZK.'} />
+      <WaitDialog open={isWaitOpen} onClose={() => { setIsWaitOpen(false) }} />
       <div className="bg-gray-900 rounded-lg p-2 w-1/2 max-w-4xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Upload Image</h2>

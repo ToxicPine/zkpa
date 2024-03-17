@@ -80,7 +80,7 @@ def main(image_path, private_key_hex, authority_private_key_hex, consortium_pubk
     print(json.dumps(witness_data))
 
 if __name__ == '__main__':
-    image_path = 'ETHLondon.png'
+    image_path = '/Users/zihan/Desktop/hackathon-london/zkpa-frontend/circuit/scripts/ETHLondon.png'
     private_key_hex = 'ec28f3b5e71d85971df7edbf06ae04f2ec28f3b5e71d85971df7edbf06ae04f2'
     authority_private_key_hex = 'ec28f06ae04f2ec6ae04f228f3b5e71d85971df7edbf0f3b5e71d85971df7edb'
     consortium_pubkey = ["022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132", "076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11"]    # Generated on BabyJubJub from Private Key 0x10203040506

@@ -6,9 +6,11 @@ const Header = () => {
     <header className="bg-gray-800 py-1">
       <div className="container mx-auto flex items-center justify-between">
         <div className="flex items-center">
-          {/* Use img tag with the imported logo image */}
-          <img src={logoImage} alt="ZKPA Logo" className="h-16" />
+          <a href="/">
+            <img src={logoImage} alt="ZKPA Logo" className="h-16" />
+          </a>
         </div>
+
         <nav>
           <ul className="flex space-x-4">
             <li>

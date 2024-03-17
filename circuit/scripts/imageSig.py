@@ -1,15 +1,14 @@
 import blake3
 import secp256k1
 from PIL import Image
-from ecdsa import ellipticcurve
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from bn254.constants import *
-from bn254 import big
-from bn254 import curve
-from bn254.ecp import *
-from bn254.ecp import generator as generator
-from bn254.ecp import ECp as ECp
+# from bn254.constants import *
+# from bn254 import big
+# from bn254 import curve
+# from bn254.ecp import *
+# from bn254.ecp import generator as generator
+# from bn254.ecp import ECp as ECp
 import hashlib
 import os
 import io
@@ -88,7 +87,7 @@ def getPubkey(private_key_hex):
     return x, y
 
 def main():
-    image_data = extract_png_data('ETHLondon.png')
+    image_data = extract_png_data('/Users/zihan/Desktop/hackathon-london/zkpa-frontend/circuit/scripts/ETHLondon.png')
     hashed_data = hash_data(image_data)
     
     private_key_hex = 'ec28f3b5e71d85971df7edbf06ae04f2ec28f3b5e71d85971df7edbf06ae04f2'

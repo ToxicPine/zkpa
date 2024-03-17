@@ -2,7 +2,7 @@
 name = "zkpa"
 type = "bin"
 authors = ["Arbion Halili"]
-compiler_version = ">=0.25.0"
+compiler_version = ">=0.23.0"
 
 [dependencies]
 aes = { tag = "v0.4.0", git = "https://github.com/TaceoLabs/noir-aes" }

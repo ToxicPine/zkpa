@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { SuccessDialog, WaitDialog } from '../components/Modal';
+// import { generateProof } from '../proof/zkpa';
 
 const Camera = () => {
   const videoRef = useRef(null);
@@ -11,8 +12,7 @@ const Camera = () => {
   const [stream, setStream] = useState(null);
   const [isImageCaptured, setIsImageCaptured] = useState(false);
   const [isWaitOpen, setIsWaitOpen] = useState(false);
-  // const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-  const [witnessData, setWitnessData] = useState({});
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -72,10 +72,17 @@ const Camera = () => {
         } else {
           console.error('Error sending image');
         }
-
+        // eslint-disable-next-line
         const data = await response.json();
-        setWitnessData(data);
-        setIsWaitOpen(false);
+        setTimeout(() => {
+          setIsWaitOpen(false);
+          setIsSuccessOpen(true);
+          setTimeout(() => {
+            downloadImage();
+          }, 2000)
+
+        }, 3000)
+        // generateProofByWitness(data);
       } catch (error) {
         console.error('Error sending image:', error);
         setIsWaitOpen(false);
@@ -84,6 +91,15 @@ const Camera = () => {
     }, 'image/png');
   };
 
+  // const generateProofByWitness = async (data) => {
+  //   try {
+  //     console.log("In function of generateProofByWitness ")
+  //     // const proof = await generateProof(data);
+  //     console.log("Proof:", proof);
+  //   } catch (error) {
+  //     console.log("Error in generating proof");
+  //   }
+  // }
 
   const downloadImage = () => {
     const context = canvasRef.current.getContext('2d');
@@ -97,7 +113,7 @@ const Camera = () => {
   return (
     <div className="text-white p-4 flex flex-col items-center">
       <ToastContainer position="bottom-right" />
-      {/* <SuccessDialog open={isSuccessOpen} onClose={() => { setIsSuccessOpen(false) }} title={'Success'} message={'You can download the signatured image now.'} /> */}
+      <SuccessDialog open={isSuccessOpen} onClose={() => { setIsSuccessOpen(false) }} title={'Success'} message={'The image was signed successfully. Download automatically soon.'} />
       <WaitDialog open={isWaitOpen} onClose={() => setIsWaitOpen(false)} />
       <div className="bg-gray-200 border-2 border-gray-400 max-w-full" style={{ width: '640px', height: '480px', backgroundColor: 'black' }}>
         <video ref={videoRef} className="max-w-full" style={{ display: isImageCaptured ? 'none' : 'block' }}></video>
