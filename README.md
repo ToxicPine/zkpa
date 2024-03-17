@@ -1,70 +1,55 @@
-# Getting Started with Create React App
+# ZKPA - Zero Knowledge Provenance Authenticity
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+<div align="center">
 
-## Available Scripts
+This project is for 2024 ETH Golabal London Hackathon.
 
-In the project directory, you can run:
+<img src="./src/assets/banner.png" style="width:400px; height:200px;"/>
 
-### `npm start`
+<img src="https://storage.googleapis.com/ethglobal-api-production/events%2Fgyosr%2Flogo%2F1699999130188_ethlondon-blue.svg" style="width:400px;background:#3240CB" />
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+</div>
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Overview
 
-### `npm test`
+ZKPA allows manufacturers to add a signature to cameras, enabling users and third parties to verify the origin and authenticity of photos. This system incorporates several core functions and technologies to ensure the integrity and authenticity of digital photos.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Core Functions
 
-### `npm run build`
+#### 1. Camera Signature Creation by Manufacturers
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Manufacturers add a signature to the camera to enable photo identification and tracking. This ensures that users and third parties can verify the camera's origin and the quality of the photos taken.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+#### 2. User Photo Capture
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The camera, being trusted, allows users to capture photos.
 
-### `npm run eject`
+#### 3. Photo Hash Generation
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Upon photo upload, the camera uses a hashing function to generate a unique hash value for the photo, ensuring its integrity and uniqueness.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### 4. Signature Generation
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The camera generates a signature for the photo, proving its genuineness.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+#### 5. Zero-Knowledge Proof Generation
 
-## Learn More
+A Zero-Knowledge proof is generated to prove the photo's authenticity without revealing the actual signature. This ensures privacy and security in verifying photo authenticity.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### 6. Verification and Storage
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Users can store the Zero-Knowledge proof along with the photo hash on a blockchain, enabling secure and verifiable photo authenticity.
 
-### Code Splitting
+#### 7. Querying and Authenticity Verification
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Other users can verify the authenticity of a photo by querying its hash. The application retrieves the corresponding Zero-Knowledge proof and photo hash, verifying the photo's authenticity without revealing its content.
 
-### Analyzing the Bundle Size
+### Technologies
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- **Zero-Knowledge Proof (ZKP) Libraries**: Used for creating and verifying signatures without disclosing sensitive information.
+- **Elliptic Curve Cryptography (ECC)**: Employed for securely generating and verifying Zero-Knowledge signatures.
+- **Image Processing Libraries (IPL)**: Utilized for extracting data from photos, which is then used to generate ZK signatures.
 
-### Making a Progressive Web App
+### Implementation Example
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Manufacturers like Sony leverage ECC to generate Zero-Knowledge signatures, ensuring the authenticity of photos captured with their cameras. The cameras use IPL to extract data from photos, which ECC then uses to create ZK signatures, providing proof of authenticity.
