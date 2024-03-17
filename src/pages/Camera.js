@@ -62,7 +62,7 @@ const Camera = () => {
       formData.append('image', blob, 'image.png');
 
       try {
-        const response = await fetch('https://image-hash-browser.vercel.app/get_witness', {
+        const response = await fetch('/get_witness', {
           method: 'POST',
           body: formData
         });
@@ -111,7 +111,7 @@ const Camera = () => {
   }
 
   return (
-    <div className="text-white p-4 flex flex-col items-center">
+    <div className="text-white p-4 flex flex-col items-center bg-gray-900 h-screen">
       <ToastContainer position="bottom-right" />
       <SuccessDialog open={isSuccessOpen} onClose={() => { setIsSuccessOpen(false) }} title={'Success'} message={'The image was signed successfully. Download automatically soon.'} />
       <WaitDialog open={isWaitOpen} onClose={() => setIsWaitOpen(false)} />

@@ -94,7 +94,7 @@ const FileUploader = () => {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const response = await fetch('https://image-hash-browser.vercel.app/hash_image', {
+      const response = await fetch('/hash_image', {
         method: 'POST',
         body: formData,
       });
@@ -227,7 +227,7 @@ const FileUploader = () => {
           <>
             <hr className="my-2 border-gray-500" />
             <div className="flex justify-between w-full px-6 mb-6">
-              <p className="text-gray-400">Supported formats: Images</p>
+              <p className="text-gray-400">Supported formats: .png, .jpeg...</p>
               <p className="text-gray-400">Maximum size: 25MB</p>
             </div>
             <div className="mb-6">

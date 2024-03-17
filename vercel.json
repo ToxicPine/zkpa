@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/get_witness",
-      "destination": "https://image-hash-browser.vercel.app"
+      "destination": "https://image-hash-browser.vercel.app/get_witness"
     },
     {
       "source": "/hash_image",
-      "destination": "https://image-hash-browser.vercel.app"
+      "destination": "https://image-hash-browser.vercel.app/hash_image"
     }
   ]
 }
