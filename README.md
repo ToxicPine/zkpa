@@ -101,10 +101,11 @@ Any generated proofs can be verified with the standard Noir utilities.
 ### Limitations
 
 1. We use AES-128 ECB in the circuit, which is slow and does not use an IV (you can tell if two ciphertexts correspond to the same plaintext).
-2. We haven't implemented meta-tagging of non-image media, although this is NOT limited to images.
+2. We haven't implemented meta-tagging of non-image media, although this tech is NOT limited to images.
 3. The web front-end is dysfunctional and returns a success in every case, since NoirJS is playing up. The CLI tools work better.
 4. The CLI tools feature hard-coded values, because we can not generate points on ECDH with BabyJubJub on Python.
 5. The tools only verify against our own certificate authority, multi-authority verification has not been implemented.
+6. We haven't implemented the checking of the blacklist -- we have left this for the future.
 
 The circuit works, and the project is earnestly not far from total functionality. It's a matter of two hours of debugging and some additional tweaking.
 
@@ -112,3 +113,7 @@ The circuit works, and the project is earnestly not far from total functionality
 
 1. Using recursive proofs to allow image edits, without permitting deceptive edits, by keeping the edit history public. This will be like ZkMic.
 2. Setting-up a secure authority to maintain and verify against the camera blacklist.
+3. Get an audit.
+4. Improve proof times.
+5. Build some SDKs for verification.
+6. Arbion's secret plans.
