@@ -4,11 +4,20 @@
 
 This project is for 2024 ETH Golabal London Hackathon.
 
-<img src="./src/assets/banner.png" style="width:400px; height:200px;"/>
-
-<img src="https://storage.googleapis.com/ethglobal-api-production/events%2Fgyosr%2Flogo%2F1699999130188_ethlondon-blue.svg" style="width:400px;background:#3240CB" />
-
 </div>
+
+<table>
+  <tr>
+    <td>
+      <img src="./src/assets/banner.png" width="400" height="200">
+    </td>
+  </tr>
+  <tr>
+    <td bgcolor="#3240CB">
+      <img src="https://storage.googleapis.com/ethglobal-api-production/events%2Fgyosr%2Flogo%2F1699999130188_ethlondon-blue.svg" width="400" height="200">
+    </td>
+  </tr>
+</table>
 
 ### Overview
 
