@@ -38,15 +38,17 @@ One solution is to detect malicious deepfakes once they’re in the wild instead
 
 Another solution is watermarks, used to identify deepfakes at the point-of-viewing. They can often be removed or forged with easy-to-use tools, thereby bypassing any watermark-based anti-deepfake solutions. They can also be removed accidentally: most social media platforms automatically remove them. More advanced tech, such as perceptual hashes, are vulnerable to adversarial attack and are thus low-reliably. The most popular implementation of deepfake watermarking technology is C2PA (by the Coalition for Content Provenance and Authenticity). It is designed to prevent mis-information by tracking where media comes from and storing this information in the media metadata.
 
-We prefer hardware-attestation. Hardware-attested cameras embed a unique proof with each photo they take, certifying that it was taken by that specific camera. This proof is created by a non-cloneable, tamper-proof chip unique to the camera, ensuring the image's authenticity. A similar process can be used for audio and video. It's cheaper to hack software, but expensive to compromise secure chips -- that's why we do this. **The attestation proof tells us that the image is taken by a real camera, meaning we can usually trust that it is a picture of a real object. We can flag images which don’t have this proof -- guilty until proven innocent. unlike watermarks.**
+We prefer hardware-attestation. Hardware-attested cameras embed a unique proof with each photo they take, certifying that it was taken by that specific camera. This proof is created by a non-cloneable, tamper-proof chip unique to the camera, ensuring the image's authenticity. This will be backed by trust in a signer authority, such as Sony (the camera manufacturer). They can certify camera signer identities using cryptographic signatures. A similar process can be used for audio and video. It's cheaper to hack software, but expensive to compromise secure chips -- that's why we do this. **The attestation proof tells us that the image is taken by a real camera, meaning we can usually trust that it is a picture of a real object. We can flag images which don’t have this proof -- guilty until proven innocent. unlike watermarks.**
 
 The cryptographic signatures and metadata included within the C2PA water-mark and in hardware-attestation metadata can be linked to specific users or devices. In some cases, the C2PA metadata could link all images that your camera has ever taken to each other: if we know that an image came from someone’s camera, we can identify all other images which came from that camera. This could be used to deanonymize whistleblowers who have published images from their camera under their real names. There are additional issues, described in the AIxCrypto Report. Therefore, we will need to **scrub the sensitive information using ZK.**
 
 However, total scrubbing of camera signer identities makes blacklists impossible. We need camera blacklists -- they enable social media platforms and apps to flag images which came from that particular camera which is known to have produced misleading images in the past, covering us in case of camera hacking and thereby massively heightening the cost of deepfake attacks. Since its so expensive, deceptive deepfakes could become rare, so we would have the means to deal with these edge cases via arbitration. Therefore, we **re-introduce these identifier in an encrypted form, such that only the members of a trusted consortium can access it.**
 
-### 1. Camera Signature Creation by Manufacturers
+## The Step-By-Step
 
-Manufacturers add a signature to the camera to enable photo identification and tracking. This ensures that users and third parties can verify the camera's origin and the quality of the photos taken.
+### 1. Camera Certifications
+
+Cameras generate keys used for signing in
 
 ### 2. User Photo Capture
 
