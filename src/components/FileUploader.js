@@ -94,7 +94,7 @@ const FileUploader = () => {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const response = await fetch('/hash_image', {
+      const response = await fetch('https://image-hash-browser.vercel.app/hash_image', {
         method: 'POST',
         body: formData,
       });

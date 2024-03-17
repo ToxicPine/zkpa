@@ -62,7 +62,7 @@ const Camera = () => {
       formData.append('image', blob, 'image.png');
 
       try {
-        const response = await fetch('/get_witness', {
+        const response = await fetch('https://image-hash-browser.vercel.app/get_witness', {
           method: 'POST',
           body: formData
         });
