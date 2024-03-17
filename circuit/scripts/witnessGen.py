@@ -38,8 +38,7 @@ def encrypt_data(data, key):
     encryptor = cipher.encryptor()
     return encryptor.update(data)
 
-def generate_camera_id(nonce_hex, pub_key_compressed, ecdh_key_hex):
-    nonce = bytes_from_hex(nonce_hex)
+def generate_camera_id(nonce, pub_key_compressed, ecdh_key_hex):
     ecdh_key = bytes_from_hex(ecdh_key_hex)
 
     camera_id = nonce[:31] + pub_key_compressed[0:32]
@@ -59,7 +58,10 @@ def main(image_path, private_key_hex, authority_private_key_hex, consortium_pubk
     #prover_key = babyjubjub_generate_pubkey(ecdh_scalar_hex)
     prover_key = [0x0121, 0xa16a]
     #ecdh_key_hex = babyjubjub_ecdh(ecdh_scalar_hex, consortium_pubkey)
-    #asserted_camera_identifier = generate_camera_id(nonce_hex, pub_key_compressed, ecdh_key_hex)
+
+    # Pre-Calculated, Since Values Are Hardcoded And Python Doesn't Like BabyJubJub. See tests in Noir to validate.
+    ecdh_key_hex = bytes([1, 235, 39, 113, 46, 171, 235, 252, 178, 0, 51, 33, 198, 103, 237, 184]).hex()
+    asserted_camera_identifier = generate_camera_id(nonce_hex, pub_key_compressed, ecdh_key_hex)
     asserted_camera_identifier = randbytes(64)
 
     witness_data = {
