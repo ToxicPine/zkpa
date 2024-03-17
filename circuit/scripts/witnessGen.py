@@ -7,6 +7,9 @@ import io
 import os
 import json
 from random import randbytes
+import sys
+from exif import Image as ExifImage
+filename = sys.argv[-1]
 
 def bytes_from_hex(hex_string):
     return bytes.fromhex(hex_string)
@@ -17,6 +20,11 @@ def extract_and_convert_image_to_ppm(image_path):
         bytes_io = io.BytesIO()
         img_rgb.save(bytes_io, format='PPM')
         return bytes_io.getvalue()
+    
+def add_exif_to_image(image_path, data):
+    with open(image_path, 'rb') as image_file:
+        my_image = ExifImage(image_file)
+    my_image.maker_note(data)
 
 def hash_data(data):
     return blake3.blake3(data).digest()
@@ -82,7 +90,7 @@ def main(image_path, private_key_hex, authority_private_key_hex, consortium_pubk
     print(json.dumps(witness_data))
 
 if __name__ == '__main__':
-    image_path = '/Users/zihan/Desktop/hackathon-london/zkpa-frontend/circuit/scripts/ETHLondon.png'
+    image_path = filename
     private_key_hex = 'ec28f3b5e71d85971df7edbf06ae04f2ec28f3b5e71d85971df7edbf06ae04f2'
     authority_private_key_hex = 'ec28f06ae04f2ec6ae04f228f3b5e71d85971df7edbf0f3b5e71d85971df7edb'
     consortium_pubkey = ["022a76889006b3268357bc86a0737304d518aa2d6556b495442f092bb1a6c132", "076d4453fe98427afe1ee6153c17917ccae7050fbcd87cde21088b4bd6f56b11"]    # Generated on BabyJubJub from Private Key 0x10203040506
