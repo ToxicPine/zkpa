@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/get_witness",
+      "destination": "https://image-hash-browser.vercel.app"
+    },
+    {
+      "source": "/hash_image",
+      "destination": "https://image-hash-browser.vercel.app"
+    }
+  ]
+}
