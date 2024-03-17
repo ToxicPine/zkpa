@@ -19,7 +19,9 @@ This project is for 2024 ETH Golabal London Hackathon.
 
 ## Overview
 
-ZKPA allows manufacturers to add a signature to cameras, enabling users and third parties to verify the origin and authenticity of photos. This system incorporates several core functions and technologies to ensure the integrity and authenticity of digital photos.
+ZKPA allows manufacturers to add a signature to cameras, enabling users and third parties to verify the origin and authenticity of media, such as photos. We use cryptographic signatures to create a chain of trust which ties the image to a trusted manufacturer of trusted and secure camera hardware, then use ZK to remove the intermediate signatures whilst maintaining the security properties. In other words, it conceals the signer identities, which could potentially be used to doxx its users. It's a viable means of mitigating deepfake misinformation -- social media could flag images that lack these camera proofs, and this will prevent people from being confused, since there can be no such proofs for images that did not come from this trusted hardware.
+
+Crucially, we implement encrypted camera identifiers, such that only trusted parties can know the true signer identities. This allows one to blacklist malicious or hacked cameras. We're working on ways of ensuring
 
 ## What, and Why?
 
