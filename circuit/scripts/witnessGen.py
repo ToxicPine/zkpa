@@ -9,6 +9,7 @@ import json
 from random import randbytes
 import sys
 from exif import Image as ExifImage
+
 filename = sys.argv[-1]
 
 def bytes_from_hex(hex_string):
