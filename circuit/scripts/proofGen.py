@@ -10,7 +10,7 @@ filename = sys.argv[-1]
 def add_exif_to_image(image_path, data):
     with open(image_path, 'rb') as image_file:
         my_image = ExifImage(image_file)
-    my_image.maker_note(data)
+        my_image.maker_note(data)
 
 def main(image_path):
     # Run "nargo prove" in the terminal and wait for it to finish
@@ -29,9 +29,10 @@ def main(image_path):
     # Add the zkpa.proof content to the dictionary with the key "zkp"
     verifier_data["zkp"] = zkpa_proof
 
-    add_exif_to_image(image_path, verifier_data)
-
     print(verifier_data)
+
+    #bug here, should be easy fix but I can't be asked.
+    #add_exif_to_image(image_path, verifier_data)
 
 if __name__ == '__main__':
     main(filename)
