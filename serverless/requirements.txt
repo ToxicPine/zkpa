@@ -1,0 +1,6 @@
+flask==2.2.2
+werkzeug==2.2.2
+pillow==9.1.1
+blake3==0.4.1
+secp256k1==0.14.0
+cryptography==42.0.5
